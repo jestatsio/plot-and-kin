@@ -13,6 +13,27 @@ const platform = `${process.platform}-${process.arch}`;
 const supported = ['darwin-arm64', 'darwin-x64', 'win32-x64'].includes(platform);
 const asset = `plot-and-kin-${version}-${platform}.${process.platform === 'win32' ? 'zip' : 'tar.gz'}`;
 const release = join(root, 'artifacts/release');
+// Windows PowerShell 5.1 sends the decoded JSON array as one pipeline object.
+// Wrapping that result in @() nests the array and joins every flag into one string.
+const windowsSetupInvocation = '[string[]]$setupArgs = ConvertFrom-Json $env:PK_INSTALL_ARGS; & $env:PK_INSTALL_SCRIPT -SetupArguments $setupArgs';
+
+async function assertWindowsArgumentContract(work, args, env) {
+  const installer = await readFile(join(root, 'scripts/install.ps1'), 'utf8');
+  const declaration = installer.match(/^param\(.*\)$/m)?.[0];
+  assert.ok(declaration, 'The installer parameter declaration must be exercised');
+  const script = join(work, 'argument-contract.ps1');
+  const capture = join(work, 'capture-arguments.mjs');
+  const output = join(work, 'captured-arguments.json');
+  await writeFile(capture, "import { writeFileSync } from 'node:fs'; writeFileSync(process.argv[2], JSON.stringify(process.argv.slice(3)));\n");
+  await writeFile(script, `${declaration}\n& $env:PK_ARG_NODE $env:PK_ARG_CAPTURE $env:PK_ARG_OUTPUT @SetupArguments\nif ($LASTEXITCODE -ne 0) { throw 'Argument capture failed' }\n`);
+  const contractEnv = { ...env, PK_INSTALL_SCRIPT: script, PK_ARG_NODE: process.execPath, PK_ARG_CAPTURE: capture, PK_ARG_OUTPUT: output };
+  // Cover explicit automation flags and the ordinary one-command guided setup.
+  for (const [invocation, expected] of [[windowsSetupInvocation, args], ['& $env:PK_INSTALL_SCRIPT', []]]) {
+    const result = spawnSync('powershell.exe', ['-NoProfile', '-NonInteractive', '-Command', invocation], { env: contractEnv, encoding: 'utf8', timeout: 30_000 });
+    assert.equal(result.status, 0, `Argument preflight failed (${result.error?.code ?? result.signal ?? result.status}): ${result.stdout}${result.stderr}`);
+    assert.deepEqual(JSON.parse(await readFile(output, 'utf8')), expected, 'Installer arguments must reach Node as separate values');
+  }
+}
 
 test('verified native installer preserves settings, supports rerun, and rejects damaged downloads', { skip: !supported, timeout: process.platform === 'win32' ? 900_000 : 300_000 }, async () => {
   // Run after release:package. An absent archive is a failure, never an implicit pass.
@@ -41,8 +62,9 @@ test('verified native installer preserves settings, supports rerun, and rejects 
       // Windows PowerShell must resolve its own modules when this test was
       // launched from PowerShell 7 through npm.
       for (const key of Object.keys(env)) if (key.toUpperCase() === 'PSMODULEPATH') delete env[key];
+      await assertWindowsArgumentContract(work, args, env);
       command = 'powershell.exe';
-      commandArgs = ['-NoProfile', '-NonInteractive', '-Command', `function Invoke-WebRequest { param($UseBasicParsing, $Uri, $OutFile, $TimeoutSec) Copy-Item -LiteralPath (Join-Path $env:PK_INSTALL_FIXTURE ([Uri]$Uri).Segments[-1]) -Destination $OutFile }; $setupArgs = @(ConvertFrom-Json $env:PK_INSTALL_ARGS); & $env:PK_INSTALL_SCRIPT -SetupArguments $setupArgs`];
+      commandArgs = ['-NoProfile', '-NonInteractive', '-Command', `function Invoke-WebRequest { param($UseBasicParsing, $Uri, $OutFile, $TimeoutSec) Copy-Item -LiteralPath (Join-Path $env:PK_INSTALL_FIXTURE ([Uri]$Uri).Segments[-1]) -Destination $OutFile }; ${windowsSetupInvocation}`];
       // Use a real switch parameter in the network stub, as the bootstrap does.
       commandArgs[3] = commandArgs[3].replace('param($UseBasicParsing,', 'param([switch]$UseBasicParsing,');
     } else {
