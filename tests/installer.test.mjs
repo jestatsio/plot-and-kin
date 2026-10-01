@@ -38,6 +38,9 @@ test('verified native installer preserves settings, supports rerun, and rejects 
     let command;
     let commandArgs;
     if (process.platform === 'win32') {
+      // Windows PowerShell must resolve its own modules when this test was
+      // launched from PowerShell 7 through npm.
+      for (const key of Object.keys(env)) if (key.toUpperCase() === 'PSMODULEPATH') delete env[key];
       command = 'powershell.exe';
       commandArgs = ['-NoProfile', '-NonInteractive', '-Command', `function Invoke-WebRequest { param($UseBasicParsing, $Uri, $OutFile, $TimeoutSec) Copy-Item -LiteralPath (Join-Path $env:PK_INSTALL_FIXTURE ([Uri]$Uri).Segments[-1]) -Destination $OutFile }; $setupArgs = @(ConvertFrom-Json $env:PK_INSTALL_ARGS); & $env:PK_INSTALL_SCRIPT -SetupArguments $setupArgs`];
       // Use a real switch parameter in the network stub, as the bootstrap does.

@@ -72,7 +72,12 @@ export async function saveSettings(settings: SavedSettings, dir = settingsDirect
 // Secrets travel over stdin, never through command arguments or host configuration.
 function runSecretCommand(command: string, args: string[], input: string): Promise<string> {
   return new Promise((resolveResult, reject) => {
-    const child = spawn(command, args, { stdio: ['pipe', 'pipe', 'pipe'], windowsHide: true });
+    // A Node process launched from PowerShell 7 inherits incompatible module
+    // paths. Let Windows PowerShell rebuild its own built-in module search path.
+    const env = command === 'powershell.exe'
+      ? Object.fromEntries(Object.entries(process.env).filter(([key]) => key.toUpperCase() !== 'PSMODULEPATH'))
+      : process.env;
+    const child = spawn(command, args, { stdio: ['pipe', 'pipe', 'pipe'], windowsHide: true, env });
     let output = ''; let size = 0;
     const fail = (exitCode?: number | null) => reject(new PKError('CREDENTIAL_STORE', `The operating system credential store was unavailable${typeof exitCode === 'number' ? ` (command exit ${exitCode})` : ''}. Unlock it and retry setup. No credential was saved in plain text.`));
     const timer = setTimeout(() => { child.kill(); fail(); }, 30_000);

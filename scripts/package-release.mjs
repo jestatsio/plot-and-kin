@@ -22,7 +22,13 @@ const output = resolve(process.argv[2] ?? join(root, 'artifacts/release'));
 await mkdir(output, { recursive: true });
 const work = await mkdtemp(join(tmpdir(), 'pk-release-'));
 const stage = join(work, 'plot-and-kin');
-const run = (command, args, options = {}) => execFileSync(command, args, { stdio: 'inherit', ...options });
+const run = (command, args, options = {}) => {
+  // PowerShell 7 -> npm -> Windows PowerShell must not inherit PS7 modules.
+  const env = command === 'powershell.exe'
+    ? Object.fromEntries(Object.entries(options.env ?? process.env).filter(([key]) => key.toUpperCase() !== 'PSMODULEPATH'))
+    : options.env;
+  return execFileSync(command, args, { stdio: 'inherit', ...options, env });
+};
 try {
   await mkdir(join(stage, 'bin'), { recursive: true });
   for (const entry of ['dist', 'skills', 'LICENSE', 'README.md', 'package.json', 'package-lock.json']) {
