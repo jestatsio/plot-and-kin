@@ -57,7 +57,11 @@ process.stdin.on('end', () => process.stderr.write('fixture EOF\\n'));
     // Codex uses CREATE_NO_WINDOW. Detach only this test's PowerShell process
     // to exercise the same absence of a console while preserving pipe handles.
     const detach = '$ErrorActionPreference = "Stop"; Add-Type -MemberDefinition \'[System.Runtime.InteropServices.DllImport("kernel32.dll")] public static extern bool FreeConsole();\' -Name ConsoleSession -Namespace PlotKinTest; if (-not [PlotKinTest.ConsoleSession]::FreeConsole()) { throw "Unable to detach the fixture console" }; & $env:PK_TEST_LAUNCHER serve; exit $LASTEXITCODE';
-    const entry = withoutConsole ? ['-Command', detach] : ['-File', launcher, 'serve'];
+    const detachedLauncher = join(work, 'detach.ps1');
+    await writeFile(detachedLauncher, `$env:PSModulePath = [IO.Path]::Combine([Environment]::GetFolderPath('System'), 'WindowsPowerShell\\v1.0\\Modules')\n${detach}\n`);
+    // Use -File just like the real manifest. PowerShell's -Command mode has
+    // its own redirected-input pipeline, which is outside this launcher test.
+    const entry = withoutConsole ? ['-File', detachedLauncher] : ['-File', launcher, 'serve'];
     child = spawn(powershell, ['-NoProfile', '-NonInteractive', '-ExecutionPolicy', 'Bypass', ...entry], {
       cwd: work, env: { ...env, PATH: '', PK_LAUNCHER_TRACE: '1', PK_TEST_LAUNCHER: launcher }, windowsHide: true, stdio: ['pipe', 'pipe', 'pipe'],
     });
