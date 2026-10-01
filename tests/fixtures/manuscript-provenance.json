@@ -1,0 +1,14 @@
+{
+  "filename": "national-archives-declaration-630.jpg",
+  "title": "Declaration of Independence, parchment front (faded handwritten archival original)",
+  "institution": "United States National Archives and Records Administration",
+  "sourceUrl": "https://www.archives.gov/files/founding-docs/declaration_of_independence_630.jpg",
+  "landingPage": "https://www.archives.gov/founding-docs/declaration",
+  "rights": "Public domain. Credit the National Archives as the original source.",
+  "rightsSource": "https://www.archives.gov/founding-docs/downloads",
+  "retrievedAt": "2026-10-01T16:05:51.766Z",
+  "sha256": "54b7d79d43e422e760d9421835bcbc929e487daca5e2499b84c436f479ef110f",
+  "size": 91445,
+  "relationshipToDcProperties": "None. This separately identified archival scan is a difficult-document test fixture only.",
+  "testing": "Decoding and coordinate-preserving crop rendering are automated. Model transcription accuracy is not asserted without a human-reviewed transcription of the supplied crop."
+}

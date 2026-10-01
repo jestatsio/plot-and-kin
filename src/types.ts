@@ -9,6 +9,7 @@ export interface PKRecord<T extends Record<string, unknown> = Record<string, unk
   data: T;
 }
 export interface RecordStore {
+  projects?(): Promise<PKRecord[]>;
   insert(record: PKRecord): Promise<void>;
   get(projectId: string, id: string): Promise<PKRecord | undefined>;
   list(projectId: string, kind?: RecordKind): Promise<PKRecord[]>;

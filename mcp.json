@@ -1,0 +1,9 @@
+{
+  "mcpServers": {
+    "plot-and-kin": {
+      "type": "stdio",
+      "command": "node",
+      "args": ["${PLUGIN_ROOT}/dist/cli.js", "serve"]
+    }
+  }
+}

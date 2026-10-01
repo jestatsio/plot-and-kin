@@ -20,6 +20,7 @@ function validateRecord(record: PKRecord): void {
 
 export class MemoryStore implements RecordStore {
   private readonly records = new Map<string, PKRecord>();
+  async projects(): Promise<PKRecord[]> { return [...this.records.values()].filter(r => r.kind === 'project').map(r => structuredClone(r)); }
   async insert(record: PKRecord): Promise<void> {
     validateRecord(record);
     if (this.records.has(record._id)) throw new PKError('CONFLICT', 'Record already exists');
@@ -57,6 +58,7 @@ export class AstraStore implements RecordStore {
   private collection(kind: RecordKind): Collection<DBRecord> {
     return this.db.collection<DBRecord>(kind === 'passage' ? PASSAGE_COLLECTION : RECORD_COLLECTION);
   }
+  async projects(): Promise<PKRecord[]> { return this.guarded(async () => (await this.collection('project').find({kind:'project'}).toArray()).map(r=>this.decode(r))); }
   private async guarded<T>(action: () => Promise<T>): Promise<T> {
     try { return await action(); } catch (error) {
       if (error instanceof PKError) throw error;

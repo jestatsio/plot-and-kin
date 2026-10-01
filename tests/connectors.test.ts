@@ -19,10 +19,26 @@ describe('DC source connectors', () => {
   });
   it('retains map extent and rights without pretending the boundary layer is raster data', async () => {
     let requested='';
-    const result=await new SanbornConnector(async url => { if (String(url).includes('/export?')) { requested=String(url); return json({href:'https://maps2.dcgis.dc.gov/dcgis/rest/directories/arcgisoutput/map.png',width:1024,height:1024,extent:{xmin:1,ymin:2,xmax:3,ymax:4,spatialReference:{wkid:3857}}}); } return {bytes:Buffer.from([137,80,78,71,13,10,26,10]),contentType:'image/png',url:String(url),status:200}; }).excerpt({bbox:[-77.01,38.89,-77,38.9]});
+    const result=await new SanbornConnector(async url => { if (new URL(url).searchParams.get('f') === 'json') { requested=String(url); return json({href:'https://maps2.dcgis.dc.gov/dcgis/rest/directories/arcgisoutput/map.png',width:1024,height:1024,extent:{xmin:1,ymin:2,xmax:3,ymax:4,spatialReference:{wkid:3857}}}); } return {bytes:Buffer.from([137,80,78,71,13,10,26,10]),contentType:'image/png',url:String(url),status:200}; }).excerpt({bbox:[-77.01,38.89,-77,38.9]});
     expect(new URL(requested).searchParams.has('layers')).toBe(false);
     expect(result.bbox).toEqual([-77.01,38.89,-77,38.9]);
     expect(result.rights).toContain('not established');
     await expect(new SanbornConnector().excerpt({bbox:[0,0,0,0]})).rejects.toThrow();
   });
+});
+
+import { readFile } from 'node:fs/promises';
+it('replays verified DC examples while keeping shared-parcel records separate', async () => {
+  const fixture=JSON.parse(await readFile(new URL('./fixtures/historyquest-live.json',import.meta.url),'utf8'));
+  const connector=new HistoryQuestConnector(async url => {
+    const where=new URL(url).searchParams.get('where')!;
+    const record=fixture.results.find((r: {records: {attributes:{ADDRESS:string}}[]}) => r.records.some(f => where.includes(f.attributes.ADDRESS)));
+    return json({features:record?.records ?? []});
+  });
+  const rosedale=await connector.lookup('1920 Rosedale St NE');
+  expect(rosedale.records[0]?.attributes.PERMITNUMBER).toBe('7722');
+  const a316=await connector.lookup('316 A Street NE');
+  const a318=await connector.lookup('318 A St NE');
+  expect(a316.records[0]?.attributes.LOT).toBe(a318.records[0]?.attributes.LOT);
+  expect(a316.records[0]?.attributes.OBJECTID).not.toBe(a318.records[0]?.attributes.OBJECTID);
 });

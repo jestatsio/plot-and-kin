@@ -1,0 +1,7 @@
+{
+  "name": "plot-and-kin",
+  "version": "0.1.0",
+  "description": "Evidence-backed property research with archival sources, reviewable claims, and portable dossiers.",
+  "skills": "./skills/",
+  "mcpServers": "./mcp.json"
+}

@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "plot-and-kin": {
+      "command": "node",
+      "args": ["${CLAUDE_PLUGIN_ROOT}/dist/cli.js", "serve"]
+    }
+  }
+}

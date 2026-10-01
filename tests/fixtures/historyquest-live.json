@@ -1,0 +1,318 @@
+{
+  "description": "Live compiled-dataset responses captured for deterministic tests. No ownership, occupancy, date or identity conclusions are implied.",
+  "retrievedAt": "2026-10-01T16:04:14.873Z",
+  "results": [
+    {
+      "address": "1920 Rosedale Street NE",
+      "records": [
+        {
+          "attributes": {
+            "NAME": null,
+            "ADDRESS": "1920 ROSEDALE STREET NE",
+            "SQUARE": "4528",
+            "SUFFIX": null,
+            "LOT": "0016",
+            "MAPYEAR": 1927,
+            "PERMIT_NOTES": null,
+            "NOTES": null,
+            "EDITTYPE": null,
+            "HOUSE_KEY": 28734,
+            "HOUSE_TYPE": "Rowhouse",
+            "EXTANT": 1,
+            "UPDATED": 1,
+            "FACADE": "building",
+            "FLAG": 0,
+            "CONTRIBUTING": null,
+            "ARCHITECTGROUP": "West, Claughton",
+            "DEVELOPER": "Biggs-Johnson Const. Co. Inc.",
+            "QUANTITY": 14,
+            "ROOMS": 6,
+            "WIDTH": 16,
+            "DEPTH": 30,
+            "NUMBER_OF_FAMILIES": 1,
+            "STORE": 0,
+            "STORIES": 2,
+            "PERMITS_LAST_EDITOR": "BKRAFT",
+            "PERMITS_LAST_EDIT_DATE": 1438629694000,
+            "RAZEDFLAG": 0,
+            "PERMITSSOURCE": "DC Historical Building Permits Database",
+            "PERMITNUMBER": "7722",
+            "OWNER": "Biggs-Johnson Const. Co. Inc.",
+            "ARCHITECT": "West, Claughton",
+            "BUILDER": "Biggs-Johnson Const. Co. Inc.",
+            "MATERIAL": "brick",
+            "PURPOSE": "dwelling",
+            "ESTIMATEDCOST": "42000",
+            "MICROFILMROLL": "352",
+            "PERMITTYPE": null,
+            "SOLIDFILLED": "solid",
+            "FOUNDATIONMATERIAL": "concrete block or br",
+            "STONETYPE": null,
+            "ROOFTYPE": "flat",
+            "FRONTMATERIAL": null,
+            "ROOFMATERIAL": "tin",
+            "HEAT": "hot water",
+            "DATE_": -1349377200000,
+            "GLOBALID": "{6D5C3D09-72C2-4DD0-B5D7-90DE0AA5DE71}",
+            "CREATED": 1776802540000,
+            "EDITED": 1776802540000,
+            "SHAPE.AREA": 0,
+            "SHAPE.LEN": 0,
+            "OBJECTID": 162239,
+            "SE_ANNO_CAD_DATA": null
+          },
+          "geometry": {
+            "rings": [
+              [
+                [
+                  -76.9763006418229,
+                  38.89689631499898
+                ],
+                [
+                  -76.97633041527715,
+                  38.896799850446925
+                ],
+                [
+                  -76.97638194104384,
+                  38.89680877915679
+                ],
+                [
+                  -76.97635461092668,
+                  38.89690705489781
+                ],
+                [
+                  -76.97635020758611,
+                  38.89690633333727
+                ],
+                [
+                  -76.97634432156195,
+                  38.89692714147003
+                ],
+                [
+                  -76.97630109517736,
+                  38.89691965576612
+                ],
+                [
+                  -76.9763073505484,
+                  38.89689749645556
+                ],
+                [
+                  -76.9763006418229,
+                  38.89689631499898
+                ]
+              ]
+            ]
+          }
+        }
+      ],
+      "url": "https://maps2.dcgis.dc.gov/dcgis/rest/services/DCGIS_DATA/Historic/MapServer/10",
+      "queryUrl": "https://maps2.dcgis.dc.gov/dcgis/rest/services/DCGIS_DATA/Historic/MapServer/10/query?f=json&where=UPPER%28ADDRESS%29+%3D+%271920+ROSEDALE+STREET+NE%27+OR+UPPER%28ADDRESS%29+%3D+%271920+ROSEDALE+ST+NE%27&outFields=*&returnGeometry=true&outSR=4326&orderByFields=OBJECTID&resultOffset=0&resultRecordCount=100",
+      "attribution": "Historical Data on DC Buildings, Brian Kraft with JMT Inc. for the DC Historic Preservation Office / Office of Planning. Compiled dataset, not original archival evidence.",
+      "rights": "CC BY 4.0 — https://creativecommons.org/licenses/by/4.0/ (dataset catalog: https://catalog.data.gov/dataset/historic-data-on-dc-buildings). Original underlying materials may have different rights.",
+      "sourceType": "compiled-dataset",
+      "truncated": false,
+      "retrievedAt": "2026-10-01T16:04:13.884Z",
+      "normalizedAddress": "1920 ROSEDALE ST NE"
+    },
+    {
+      "address": "316 A Street NE",
+      "records": [
+        {
+          "attributes": {
+            "NAME": "Frederick Douglass House",
+            "ADDRESS": "316 A STREET NE",
+            "SQUARE": "0785",
+            "SUFFIX": null,
+            "LOT": "0046",
+            "MAPYEAR": 1871,
+            "PERMIT_NOTES": null,
+            "NOTES": null,
+            "EDITTYPE": null,
+            "HOUSE_KEY": null,
+            "HOUSE_TYPE": null,
+            "EXTANT": 1,
+            "UPDATED": null,
+            "FACADE": null,
+            "FLAG": null,
+            "CONTRIBUTING": "Yes",
+            "ARCHITECTGROUP": null,
+            "DEVELOPER": "Douglass, Frederick",
+            "QUANTITY": null,
+            "ROOMS": null,
+            "WIDTH": null,
+            "DEPTH": null,
+            "NUMBER_OF_FAMILIES": null,
+            "STORE": 0,
+            "STORIES": null,
+            "PERMITS_LAST_EDITOR": "BKRAFT",
+            "PERMITS_LAST_EDIT_DATE": 1475102400000,
+            "RAZEDFLAG": 0,
+            "PERMITSSOURCE": "DC IPS Database",
+            "PERMITNUMBER": null,
+            "OWNER": "Douglass, Frederick",
+            "ARCHITECT": null,
+            "BUILDER": " ",
+            "MATERIAL": null,
+            "PURPOSE": "dwelling",
+            "ESTIMATEDCOST": null,
+            "MICROFILMROLL": null,
+            "PERMITTYPE": null,
+            "SOLIDFILLED": null,
+            "FOUNDATIONMATERIAL": null,
+            "STONETYPE": null,
+            "ROOFTYPE": null,
+            "FRONTMATERIAL": null,
+            "ROOFMATERIAL": null,
+            "HEAT": null,
+            "DATE_": null,
+            "GLOBALID": "{2C8AE58F-7343-4941-AC2F-3CD3ABCB94DA}",
+            "CREATED": 1776802540000,
+            "EDITED": 1776802540000,
+            "SHAPE.AREA": 0,
+            "SHAPE.LEN": 0,
+            "OBJECTID": 195591,
+            "SE_ANNO_CAD_DATA": null
+          },
+          "geometry": {
+            "rings": [
+              [
+                [
+                  -77.00119817201305,
+                  38.89107039612919
+                ],
+                [
+                  -77.00127715331153,
+                  38.89106994487223
+                ],
+                [
+                  -77.00127843459022,
+                  38.89117074856895
+                ],
+                [
+                  -77.00119940706556,
+                  38.891170749408545
+                ],
+                [
+                  -77.00119817201305,
+                  38.89107039612919
+                ]
+              ]
+            ]
+          }
+        }
+      ],
+      "url": "https://maps2.dcgis.dc.gov/dcgis/rest/services/DCGIS_DATA/Historic/MapServer/10",
+      "queryUrl": "https://maps2.dcgis.dc.gov/dcgis/rest/services/DCGIS_DATA/Historic/MapServer/10/query?f=json&where=UPPER%28ADDRESS%29+%3D+%27316+A+STREET+NE%27+OR+UPPER%28ADDRESS%29+%3D+%27316+A+ST+NE%27&outFields=*&returnGeometry=true&outSR=4326&orderByFields=OBJECTID&resultOffset=0&resultRecordCount=100",
+      "attribution": "Historical Data on DC Buildings, Brian Kraft with JMT Inc. for the DC Historic Preservation Office / Office of Planning. Compiled dataset, not original archival evidence.",
+      "rights": "CC BY 4.0 — https://creativecommons.org/licenses/by/4.0/ (dataset catalog: https://catalog.data.gov/dataset/historic-data-on-dc-buildings). Original underlying materials may have different rights.",
+      "sourceType": "compiled-dataset",
+      "truncated": false,
+      "retrievedAt": "2026-10-01T16:04:14.381Z",
+      "normalizedAddress": "316 A ST NE"
+    },
+    {
+      "address": "318 A Street NE",
+      "records": [
+        {
+          "attributes": {
+            "NAME": "Frederick Douglass House",
+            "ADDRESS": "318 A STREET NE",
+            "SQUARE": "0785",
+            "SUFFIX": null,
+            "LOT": "0046",
+            "MAPYEAR": 1871,
+            "PERMIT_NOTES": null,
+            "NOTES": null,
+            "EDITTYPE": null,
+            "HOUSE_KEY": null,
+            "HOUSE_TYPE": null,
+            "EXTANT": 1,
+            "UPDATED": null,
+            "FACADE": null,
+            "FLAG": null,
+            "CONTRIBUTING": "Yes",
+            "ARCHITECTGROUP": null,
+            "DEVELOPER": "Douglass, Frederick",
+            "QUANTITY": null,
+            "ROOMS": null,
+            "WIDTH": null,
+            "DEPTH": null,
+            "NUMBER_OF_FAMILIES": null,
+            "STORE": 0,
+            "STORIES": null,
+            "PERMITS_LAST_EDITOR": "BKRAFT",
+            "PERMITS_LAST_EDIT_DATE": 1475102400000,
+            "RAZEDFLAG": 0,
+            "PERMITSSOURCE": "DC IPS Database",
+            "PERMITNUMBER": null,
+            "OWNER": "Douglass, Frederick",
+            "ARCHITECT": null,
+            "BUILDER": " ",
+            "MATERIAL": null,
+            "PURPOSE": "dwelling",
+            "ESTIMATEDCOST": null,
+            "MICROFILMROLL": null,
+            "PERMITTYPE": null,
+            "SOLIDFILLED": null,
+            "FOUNDATIONMATERIAL": null,
+            "STONETYPE": null,
+            "ROOFTYPE": null,
+            "FRONTMATERIAL": null,
+            "ROOFMATERIAL": null,
+            "HEAT": null,
+            "DATE_": null,
+            "GLOBALID": "{10E2A016-A427-4E97-97A4-B6006BB70979}",
+            "CREATED": 1776802540000,
+            "EDITED": 1776802540000,
+            "SHAPE.AREA": 0,
+            "SHAPE.LEN": 0,
+            "OBJECTID": 244121,
+            "SE_ANNO_CAD_DATA": null
+          },
+          "geometry": {
+            "rings": [
+              [
+                [
+                  -77.00113085583709,
+                  38.89107400015132
+                ],
+                [
+                  -77.0011981720661,
+                  38.89107354906027
+                ],
+                [
+                  -77.00119940706556,
+                  38.891170749408545
+                ],
+                [
+                  -77.00111551524463,
+                  38.8911707502413
+                ],
+                [
+                  -77.00111497311416,
+                  38.891146968137974
+                ],
+                [
+                  -77.0011317791341,
+                  38.89114678780854
+                ],
+                [
+                  -77.00113085583709,
+                  38.89107400015132
+                ]
+              ]
+            ]
+          }
+        }
+      ],
+      "url": "https://maps2.dcgis.dc.gov/dcgis/rest/services/DCGIS_DATA/Historic/MapServer/10",
+      "queryUrl": "https://maps2.dcgis.dc.gov/dcgis/rest/services/DCGIS_DATA/Historic/MapServer/10/query?f=json&where=UPPER%28ADDRESS%29+%3D+%27318+A+STREET+NE%27+OR+UPPER%28ADDRESS%29+%3D+%27318+A+ST+NE%27&outFields=*&returnGeometry=true&outSR=4326&orderByFields=OBJECTID&resultOffset=0&resultRecordCount=100",
+      "attribution": "Historical Data on DC Buildings, Brian Kraft with JMT Inc. for the DC Historic Preservation Office / Office of Planning. Compiled dataset, not original archival evidence.",
+      "rights": "CC BY 4.0 — https://creativecommons.org/licenses/by/4.0/ (dataset catalog: https://catalog.data.gov/dataset/historic-data-on-dc-buildings). Original underlying materials may have different rights.",
+      "sourceType": "compiled-dataset",
+      "truncated": false,
+      "retrievedAt": "2026-10-01T16:04:14.872Z",
+      "normalizedAddress": "318 A ST NE"
+    }
+  ]
+}

@@ -1,6 +1,7 @@
 import { createHash } from 'node:crypto';
 import { describe, expect, it } from 'vitest';
 import { buildDossier, copyRecords, createBundle, restoreBundle } from '../src/portability.js';
+import { MAX_SOURCE_BYTES } from '../src/library.js';
 import type { BlobStore, PKRecord, RecordKind, RecordStore } from '../src/types.js';
 
 class TestStore implements RecordStore {
@@ -91,12 +92,14 @@ describe('portable research dossiers', () => {
   });
   it('excludes credentials and machine paths from exports', async () => {
     const { store, blobs } = await fixture();
-    await store.insert(rec('private', 'log', { apiKey: 'secret-value', nested: { authorization: 'Bearer x', localPath: '/Users/private/original.pdf' }, message: 'safe note' }));
+    await store.insert(rec('private', 'log', { apiKey: 'secret-value', nested: { authorization: 'Bearer x', localPath: '/Users/private/original.pdf', ASTRA_DB_APPLICATION_TOKEN: 'secret-astra', ANTHROPIC_API_KEY: 'secret-anthropic', PK_LIBRARY_DIR: '/Users/private/library' }, message: 'safe note' }));
     const bundle = await createBundle(store, blobs, 'case-1');
     const serialized = JSON.stringify(bundle);
     expect(serialized).not.toContain('secret-value');
     expect(serialized).not.toContain('/Users/private');
     expect(serialized).not.toContain('Bearer x');
+    expect(serialized).not.toContain('secret-astra');
+    expect(serialized).not.toContain('secret-anthropic');
     expect(serialized).toContain('safe note');
   });
   it('rejects corrupt blobs and dangling evidence references before writing anything', async () => {
@@ -139,7 +142,7 @@ describe('portable research dossiers', () => {
     await expect(restoreBundle(destination, files, duplicate, { targetProjectId: 'new', operationId: 'duplicate' })).rejects.toThrow(/duplicate/i);
     const future = { ...bundle, schemaVersion: 99 };
     await expect(restoreBundle(destination, files, future, { targetProjectId: 'new', operationId: 'future' })).rejects.toThrow(/version/i);
-    const unsafe = structuredClone(bundle); unsafe.records[0]!.data.localPath = '/tmp/overwrite';
+    const unsafe = structuredClone(bundle); unsafe.records.find(r => r._id === 's1')!.data.localPath = '/tmp/overwrite';
     await expect(restoreBundle(destination, files, unsafe, { targetProjectId: 'new', operationId: 'unsafe' })).rejects.toThrow(/path|sensitive/i);
     expect(destination.writes).toBe(0); expect(files.writes).toBe(0);
   });
@@ -182,6 +185,24 @@ describe('portable research dossiers', () => {
     bundle.assets = [];
     const destination = new TestStore(); const files = new TestBlobs();
     await expect(restoreBundle(destination, files, bundle, { targetProjectId: 'new', operationId: 'missing' })).rejects.toThrow(/asset/i);
+    expect(destination.writes).toBe(0); expect(files.writes).toBe(0);
+  });
+  it('rejects an individually oversized valid asset before any destination writes', async () => {
+    const { store, blobs } = await fixture(); const bundle = await createBundle(store, blobs, 'case-1');
+    const oversized = Buffer.alloc(MAX_SOURCE_BYTES + 1, 42);
+    const hash = createHash('sha256').update(oversized).digest('hex');
+    bundle.records.find(record => record._id === 's1')!.data.blob = { hash, size: oversized.byteLength };
+    bundle.assets = [{ hash, size: oversized.byteLength, encoding: 'base64', data: oversized.toString('base64') }];
+    const destination = new TestStore(); const files = new TestBlobs();
+    await expect(restoreBundle(destination, files, bundle, { targetProjectId: 'new', operationId: 'oversized' })).rejects.toThrow(/asset.*size|size.*limit/i);
+    expect(destination.writes).toBe(0); expect(files.writes).toBe(0);
+  });
+  it('rejects unreferenced assets before any destination writes', async () => {
+    const { store, blobs } = await fixture(); const bundle = await createBundle(store, blobs, 'case-1');
+    const bytes = Buffer.from('unreferenced original');
+    bundle.assets.push({ hash: createHash('sha256').update(bytes).digest('hex'), size: bytes.byteLength, encoding: 'base64', data: bytes.toString('base64') });
+    const destination = new TestStore(); const files = new TestBlobs();
+    await expect(restoreBundle(destination, files, bundle, { targetProjectId: 'new', operationId: 'orphan' })).rejects.toThrow(/unreferenced/i);
     expect(destination.writes).toBe(0); expect(files.writes).toBe(0);
   });
   it('does not carry a source-project review approval into explicitly reused claims', async () => {
@@ -231,6 +252,98 @@ describe('portable research dossiers', () => {
     expect(budget.operations[0]!.status).toBe('uncertain');
     expect(processing.data.status).toBe('uncertain');
     expect(processing.data.sourceId).toBe((await destination.list('new', 'source'))[0]!._id);
+  });
+  it('builds a chronological timeline while retaining date qualifiers, category and review status', async () => {
+    const { store } = await fixture();
+    for (const [id, eventDate, category] of [['dated', '1901-02-03', 'occupancy'], ['year', '1890', 'construction'], ['circa', 'circa 1880', 'construction'], ['ambiguous', '01/02/1900', 'ownership']]) {
+      await store.insert(rec(id!, 'claim', { statement: `Statement ${id}`, eventDate, category, reviewStatus: 'proposed', entityIds: [], evidence: [{ passageId: 'p1', stance: 'supporting' }] }));
+    }
+    const dossier = await buildDossier(store, 'case-1');
+    expect(dossier.json.timeline.filter(entry => entry.sortDate).map(entry => entry.claimId)).toEqual(['circa', 'year', 'dated']);
+    expect(dossier.json.timeline.find(entry => entry.claimId === 'circa')).toMatchObject({ eventDate: 'circa 1880', dateInterpretation: 'approximate', category: 'construction', reviewStatus: 'proposed' });
+    expect(dossier.json.timeline.find(entry => entry.claimId === 'ambiguous')).toMatchObject({ eventDate: '01/02/1900', dateInterpretation: 'unplaced' });
+    expect(dossier.json.timeline.find(entry => entry.claimId === 'c1')).toMatchObject({ dateInterpretation: 'undated', reviewStatus: 'accepted' });
+    expect(dossier.markdown).toContain('## Timeline');
+    expect(dossier.html).toContain('circa 1880');
+    expect(dossier.html).toContain('Unplaced date');
+  });
+  it('remaps processing provenance on restore but omits processing jobs from evidence-only reuse', async () => {
+    const { store, blobs } = await fixture();
+    const passage = (await store.get('case-1', 'p1'))!;
+    passage.data.processingId = 'processing-1'; await store.replace(passage, passage.revision);
+    await store.insert(rec('processing-1', 'processing', { sourceId: 's1', passageId: 'p1', page: 2, status: 'complete', model: 'test-model', processingVersion: '1' }));
+    const bundle = await createBundle(store, blobs, 'case-1'); const destination = new TestStore();
+    await restoreBundle(destination, new TestBlobs(), bundle, { targetProjectId: 'new', operationId: 'processing-links' });
+    const restoredPassage = (await destination.list('new', 'passage'))[0]!;
+    expect(restoredPassage.data.processingId).toBe((await destination.list('new', 'processing'))[0]!._id);
+    await store.insert(rec('other', 'project', { question: 'Other case' }, 'other'));
+    const copied = await copyRecords(store, 'case-1', 'other', ['p1']);
+    expect(copied.map(record => record.kind).sort()).toEqual(['passage', 'source']);
+    expect(copied.find(record => record.kind === 'passage')!.data).not.toHaveProperty('processingId');
+    expect(copied.find(record => record.kind === 'passage')!.data.origin).toMatchObject({ processingId: 'processing-1' });
+  });
+  it('resumes an interrupted explicit copy without duplicates and records completed progress', async () => {
+    const { store } = await fixture();
+    await store.insert(rec('other', 'project', { question: 'Other case' }, 'other'));
+    store.failInsertAfter = store.writes + 2;
+    await expect(copyRecords(store, 'case-1', 'other', ['c1'], 'copy-once')).rejects.toThrow('interrupted');
+    const pending = (await store.list('other', 'operation'))[0]!;
+    expect(pending.data.status).toBe('running');
+    store.failInsertAfter = undefined;
+    const copied = await copyRecords(store, 'case-1', 'other', ['c1'], 'copy-once');
+    expect(copied).toHaveLength(3);
+    expect((await store.list('other', 'operation'))[0]!.data).toMatchObject({ type: 'copy', status: 'complete', copiedRecordIds: expect.arrayContaining(copied.map(record => record._id)) });
+    const writes = store.writes;
+    const repeated = await copyRecords(store, 'case-1', 'other', ['c1'], 'copy-once');
+    expect(repeated.map(record => record._id)).toEqual(copied.map(record => record._id));
+    expect(store.writes).toBe(writes);
+    await expect(copyRecords(store, 'case-1', 'other', ['c2'], 'copy-once')).rejects.toThrow(/conflict|different/i);
+  });
+  it('uses a deterministic default copy operation for unchanged source snapshots', async () => {
+    const { store } = await fixture();
+    await store.insert(rec('other', 'project', { question: 'Other case' }, 'other'));
+    const first = await copyRecords(store, 'case-1', 'other', ['c1']);
+    const writes = store.writes;
+    const second = await copyRecords(store, 'case-1', 'other', ['c1']);
+    expect(second.map(record => record._id)).toEqual(first.map(record => record._id));
+    expect(store.writes).toBe(writes);
+  });
+  it('round trips completed copy progress and remaps its destination record references', async () => {
+    const { store, blobs } = await fixture();
+    const projectData = structuredClone((await store.get('case-1', 'case-1'))!.data);
+    await store.insert(rec('other', 'project', { ...projectData, address: 'Other property' }, 'other'));
+    await copyRecords(store, 'case-1', 'other', ['c1'], 'portable-copy');
+    const bundle = await createBundle(store, blobs, 'other'); const destination = new TestStore();
+    await restoreBundle(destination, new TestBlobs(), bundle, { targetProjectId: 'third', operationId: 'restore-copy' });
+    const operation = (await destination.list('third', 'operation')).find(record => record.data.type === 'copy')!;
+    expect(operation.data.status).toBe('complete');
+    for (const id of operation.data.copiedRecordIds as string[]) expect(await destination.get('third', id)).toBeDefined();
+    expect((await destination.list('third', 'claim'))[0]!.data.reviewStatus).toBe('proposed');
+  });
+  it.each([false, true])('round trips an approved processing retry chain with target dispatched=%s', async dispatched => {
+    const { store, blobs } = await fixture();
+    await store.insert(rec('process-old', 'processing', { sourceId: 's1', page: 2, status: 'uncertain', model: 'test-model', processingVersion: '1', supersededBy: 'process-next', retryApproval: { reviewer: 'Researcher', approvalText: 'Retry after settling billing', at: stamp } }));
+    if (dispatched) await store.insert(rec('process-next', 'processing', { sourceId: 's1', page: 2, status: 'result_saved', text: 'Saved reading', extractionMetadata: { method: 'model' }, model: 'test-model', processingVersion: '1' }));
+    const bundle = await createBundle(store, blobs, 'case-1'); const destination = new TestStore();
+    await restoreBundle(destination, new TestBlobs(), bundle, { targetProjectId: 'new', operationId: 'retry-chain' });
+    const prior = (await destination.list('new', 'processing')).find(record => record.data.supersededBy)!;
+    expect(prior.data.supersededBy).not.toBe('process-next');
+    expect(prior.data.retryApproval).toEqual({ reviewer: 'Researcher', approvalText: 'Retry after settling billing', at: stamp });
+    const next = await destination.get('new', String(prior.data.supersededBy));
+    if (dispatched) expect(next?.data).toMatchObject({ status: 'result_saved', sourceId: prior.data.sourceId, page: 2 });
+    else expect(next).toBeUndefined();
+  });
+  it('remaps orphan billing reservations and their source context without inventing processing records', async () => {
+    const { store, blobs } = await fixture();
+    const project = (await store.get('case-1', 'case-1'))!;
+    project.data.budget = { limitMicros: 10000000, reservedMicros: 3000, spentMicros: 0, operations: [{ operationId: 'undispatched-operation', estimatedMicros: 3000, status: 'uncertain', context: { sourceId: 's1', page: 2, model: 'test-model', cacheKey: 'test-cache-key', processingVersion: '1' } }] };
+    await store.replace(project, project.revision);
+    const bundle = await createBundle(store, blobs, 'case-1'); const destination = new TestStore();
+    await restoreBundle(destination, new TestBlobs(), bundle, { targetProjectId: 'new', operationId: 'orphan-reservation' });
+    const budget = (await destination.get('new', 'new'))!.data.budget as { operations: Array<{ operationId: string; context: { sourceId: string } }> };
+    expect(budget.operations[0]!.operationId).not.toBe('undispatched-operation');
+    expect(budget.operations[0]!.context.sourceId).toBe((await destination.list('new', 'source'))[0]!._id);
+    expect(await destination.get('new', budget.operations[0]!.operationId)).toBeUndefined();
   });
   it.each([
     ['missing claim evidence', (records: PKRecord[]) => { delete records.find(r => r._id === 'c2')!.data.evidence; }],
