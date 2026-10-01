@@ -8,18 +8,18 @@ Start with an address and a question. Plot & Kin saves cases on your computer by
 
 ## Install and connect
 
-**Release status:** Claude Desktop extensions, Codex marketplace packages, and macOS/Windows installers are being validated. A packaged researcher release and the Git marketplace catalog have not been published yet. The actual desktop-client acceptance checklist remains open. The release paths below describe installation after publication.
+**Release status:** native preview builds are available for macOS and Windows. Public release downloads and the Git marketplace catalog are not published yet. Automated package checks pass on all three supported platforms, and the Apple Silicon Claude Desktop walkthrough covers installation through a sample dossier export. See [client acceptance](client-acceptance.md) for remaining desktop checks.
 
-### Client packages: no terminal for your first case
+### Client packages: runtime included
 
-After publication, choose a package for **Mac Apple Silicon**, **Mac Intel**, or **Windows x64**:
+Follow the [preview download guide](distribution.md#preview-builds-available-now) to choose a package for **Mac Apple Silicon**, **Mac Intel**, or **Windows x64**:
 
 - **Claude Desktop:** download the matching `.mcpb`, then use **Settings → Extensions → Advanced settings → Install extension**.
-- **Codex:** add the custom Plot & Kin marketplace, then install the entry matching your computer. A downloaded marketplace ZIP also supports local installation.
+- **Codex:** extract the matching `-codex.zip`, add its folder as a local marketplace source, then install Plot & Kin. The Git marketplace route will be available after catalog publication.
 
-Both packages include their runtime and start with persistent local storage. No Node.js installation, database account, model API key, or guided setup is needed for your first local case. Start a new chat and ask **“Help me get started with Plot & Kin.”** Your client's account and public-source network access are still required.
+Both packages include their runtime and start with persistent local storage. No Node.js installation, database account, model API key, or guided setup is needed for your first local case. Codex local-source registration may require its CLI depending on the client version. Start a new chat and ask **“Help me get started with Plot & Kin.”** Your client's account and public-source network access are still required.
 
-Use [client packages and marketplace installation](distribution.md) for exact files and commands once available. A custom marketplace is separate from an approved public-directory listing. If you already connected this client through guided setup, follow the migration steps there to avoid duplicate tools.
+Use [client packages and marketplace installation](distribution.md) for exact files and commands. The preview also includes a [bundled guided setup](distribution.md#guided-setup-from-a-preview) for either or both clients. A custom marketplace is separate from an approved public-directory listing. If you already connected this client through guided setup, follow the migration steps there to avoid duplicate tools.
 
 ### Available now: developer checkout
 

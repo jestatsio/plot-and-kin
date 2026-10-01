@@ -5,21 +5,58 @@
 <p align="center">
   <a href="https://github.com/jestatsio/plot-and-kin/actions/workflows/ci.yml"><img src="https://github.com/jestatsio/plot-and-kin/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-Apache%202.0-d7b881" alt="Apache 2.0 license"></a>
-  <a href="package.json"><img src="https://img.shields.io/badge/node-%E2%89%A522.19-476357" alt="Node.js 22.19 or later"></a>
+  <a href="docs/distribution.md"><img src="https://img.shields.io/badge/platforms-macOS%20%7C%20Windows-476357" alt="macOS and Windows"></a>
 </p>
 
 <p align="center">
-  <a href="https://jestatsio.github.io/plot-and-kin/"><strong>Explore the docs</strong></a> ·
-  <a href="docs/getting-started.md">Get started</a> ·
+  <a href="docs/distribution.md#preview-builds-available-now"><strong>Install the preview</strong></a> ·
+  <a href="https://jestatsio.github.io/plot-and-kin/">Explore the docs</a> ·
   <a href="docs/source-coverage.md">Source coverage</a> ·
   <a href="docs/validation.md">Validation</a>
 </p>
 
 # An address is a starting point. Evidence tells the story.
 
-**Plot & Kin helps professional researchers turn property-history questions into reviewable evidence dossiers.** Start with an address and a question. Gather sources, trace people and places, compare conflicting accounts, and carry every conclusion back to its evidence.
+**Turn a property-history question into a dossier you can stand behind.** Plot & Kin helps professional researchers gather sources, trace people and places, compare conflicting accounts, and carry every conclusion back to its evidence.
 
-An open-source MCP server and Codex workflow plugin, built for **Codex and Claude Desktop**. The service runs on your machine. Research saves locally by default, with an optional guided connection to your own Astra database. Original documents stay in your local library.
+Work in **Codex or Claude Desktop**. Plot & Kin runs on your computer and saves the research between conversations. Start with local storage, add your own Astra database when you need it, and keep original documents in your local library. Open source under Apache-2.0.
+
+## Choose your client. Start your first case.
+
+**No separate Node.js installation, Astra account, or model API key is needed for public records and text documents.** Native packages include the runtime and document tools. Your client's account and charges are separate.
+
+| How you work | Install path | What you do |
+| --- | --- | --- |
+| **Claude Desktop** | [Desktop extension](docs/distribution.md#claude-desktop) · `.mcpb` | Download your platform's package, then select it in **Settings → Extensions → Advanced settings → Install extension** |
+| **Codex** | [Local marketplace](docs/distribution.md#codex-offline-marketplace) · `-codex.zip` | Extract the package, add its folder as a marketplace source, then install **Plot & Kin** |
+| **Either or both clients** | [Guided setup](docs/distribution.md#guided-setup-from-a-preview) | Choose your client and **Save on this computer**. The one-command release installer is prepared for publication |
+
+**[Get a native preview build →](docs/distribution.md#preview-builds-available-now)** Choose **Apple Silicon Mac** (`darwin-arm64`), **Intel Mac** (`darwin-x64`), or **Windows x64** (`win32-x64`). Preview downloads are GitHub Actions artifacts and require a signed-in GitHub account.
+
+> **Preview status · October 1, 2026:** native packages have passed automated checks on all three platforms. Public release downloads and the [Codex Git marketplace catalog](docs/distribution.md#codex-git-marketplace) are not published yet. Use the preview guide above or the [developer checkout](#build-from-source). Official directory listings are a separate milestone.
+
+Once installed, open a new chat:
+
+> Help me get started with Plot & Kin.
+
+Try **“Show me the Plot & Kin sample”** for a clearly labeled fictional case, or begin with your own question:
+
+> Research 1920 Rosedale Street NE in Washington, DC. What do the available building records tell us about its early construction?
+
+Review the cited evidence, approve only the findings you accept, and ask **“Show the dossier here and save an HTML copy.”** Come back later with **“Continue my Rosedale Street case.”** Cases, originals, and research history live outside the plugin installation.
+
+<details>
+<summary><strong>See Plot & Kin installed in Claude Desktop</strong></summary>
+
+<p align="center">
+  <img src="docs/site/assets/claude-extension-installed.jpg" alt="Plot & Kin installed and enabled in Claude Desktop on an Apple Silicon Mac, with no required configuration fields." width="100%">
+  <br>
+  <sub>Actual direct installation on macOS Apple Silicon. Claude displays its standard local-extension warning. This is not a directory endorsement. <a href="docs/acceptance/2026-10-01-claude-desktop.md">Read the walkthrough evidence.</a></sub>
+</p>
+
+</details>
+
+## A research record you can inspect
 
 <p align="center">
   <a href="https://jestatsio.github.io/plot-and-kin/"><img src="docs/site/assets/dossier-desktop.jpg" alt="A Plot & Kin HTML dossier showing a synthetic property-history case with proposed findings, a timeline, source evidence, and research history." width="100%"></a>
@@ -27,13 +64,11 @@ An open-source MCP server and Codex workflow plugin, built for **Codex and Claud
   <sub>An actual exported HTML dossier using explicitly fictional demonstration material. It is a report, not a separate web application.</sub>
 </p>
 
-## From a lead to a record you can inspect
-
 - **Evidence at the point of the claim.** Link supporting and opposing passages, pages, and image regions. Less precise citations remain visibly less precise.
 - **A history that keeps its uncertainty.** Separate proposals from approved conclusions, preserve competing explanations, and retain ambiguous or undated events in the timeline.
 - **Review that leaves a trail.** Record decisions against the reviewed version. Corrections preserve prior extractions, and ambiguous identity merges require explicit review.
 - **Documents beyond searchable text.** Extract embedded text or choose OpenAI or Anthropic processing for scans, handwriting, photographs, and map excerpts.
-- **Research with boundaries.** Checkpoint progress, retain failed searches and next steps, and enforce run limits plus a default $10 project processing budget.
+- **Research with boundaries.** Save progress, failed searches, and next steps within bounded runs. Optional model processing has a default $10 cumulative project budget.
 - **Work you can take with you.** Export Markdown, HTML, and JSON. Back up originals, citations, corrections, decisions, and logs, then restore into a fresh project.
 
 ```mermaid
@@ -45,41 +80,11 @@ flowchart LR
   D -->|Questions remain| B
 ```
 
-## Start with an address. Keep going tomorrow.
-
-**No database account or model key is needed for public records and text documents.** Client packages include Node.js and the document-processing dependencies. Your first local case needs no separate runtime installation or terminal setup.
-
-**Release status:** client packages and one-command installers are being validated. A packaged release and the Git marketplace catalog have not been published yet. Actual desktop-client acceptance remains open.
-
-| Once published | How you will start |
-| --- | --- |
-| **Claude Desktop extension** | Install the `.mcpb` for your computer from Claude's Extensions settings |
-| **Codex custom marketplace** | Add the Plot & Kin marketplace, then install the entry for your computer |
-| **Guided setup for either client** | Run one command on macOS or Windows, then choose your client |
-
-See [client packages and marketplace installation](docs/distribution.md) for platform selection, updates, and the separate public-directory submission process. Until publication, the developer path requires **Node.js 22.19+, npm, and Git**:
-
-```sh
-git clone https://github.com/jestatsio/plot-and-kin.git
-cd plot-and-kin
-npm ci
-npm run build
-node dist/cli.js setup
-```
-
-Choose your client and **Save on this computer**. Restart the selected client, then ask:
-
-> Help me research 1920 Rosedale Street NE with Plot & Kin. What do the public building records tell us?
-
-Or ask **“Show me the Plot & Kin sample”** for a labeled fictional case. Review the evidence before approving a finding. Ask for a dossier, then return later with **“Continue my Rosedale Street case.”** The saved research is independent of the original chat.
-
-See [the setup guide](docs/getting-started.md) for the release installer paths, optional Astra connection, scan processing, and recovery. To inspect a standalone synthetic export without connecting a client, run `node dist/cli.js demo`. That CLI demo uses temporary records and never invents a human approval.
-
 ## First stop: Washington, DC
 
 The first locality combines **HistoryQuest building records**, **1880 Sanborn map excerpts**, and **researcher-supplied documents, images, and public document URLs**. Subscription material enters through permitted manual imports.
 
-Compiled building information is identified as a research lead. Map excerpts retain attribution and extent. Address matches remain candidates for examination. These sources provide a starting point, with coverage and access limits documented in [source coverage](docs/source-coverage.md).
+Compiled building information is a research lead. A permit date does not establish a construction date, and ownership does not establish occupancy. Map excerpts retain attribution and extent. Address matches remain candidates for examination. See [source coverage](docs/source-coverage.md) for the starting sources, their provenance, and their limits.
 
 ## Your tools. Your research record.
 
@@ -90,13 +95,33 @@ Compiled building information is identified as a research lead. Map excerpts ret
 | **Your Astra database, if connected** | Structured research for cases you explicitly transfer, or for an explicitly selected Astra default |
 | **Your selected model provider, when enabled** | The document or image content required for requested processing |
 
-Astra is optional and does not back up local original documents. No model key is required for public-record and embedded-text workflows. Model-assisted processing uses your chosen provider and credentials, with no silent provider switching. The $10 default processing cap excludes client charges and database hosting. See [setup and recovery](docs/getting-started.md#processing-budget-and-recovery), [evidence and data handling](docs/evidence-and-data.md), and the [privacy notice](docs/privacy.md).
+Astra is optional and does not back up local original documents. Model-assisted processing uses your chosen provider and credentials, with no silent provider switching. The $10 default processing cap excludes client charges and database hosting. Default runs allow **30 minutes, 25 external search requests, and 50 processed pages**. Saved progress survives a stopped run.
+
+See [optional setup](docs/distribution.md#optional-astra-and-scan-processing), [evidence and data handling](docs/evidence-and-data.md), and the [privacy notice](docs/privacy.md).
 
 ## Built for a careful first pilot
 
-Plot & Kin is a **researcher-facing prototype** under the Apache-2.0 license. Automated tests, real stdio checks, and live Astra/DC connector checks are recorded in [validation](docs/validation.md). Actual desktop-client acceptance, live model extraction quality, and researcher effectiveness still need evaluation.
+Plot & Kin is a **researcher-facing prototype**. Native package checks and actual Codex loader/restart tests pass on all three supported platforms. A Claude Desktop walkthrough on Apple Silicon verified installation, a fictional sample, citation reading, and dossier export. The full desktop journeys, live model extraction quality, and researcher effectiveness remain under evaluation. See [client acceptance](docs/client-acceptance.md) and [validation](docs/validation.md) for the evidence and remaining checks.
 
 Review approvals are recorded workflow decisions, not an independently authenticated human-only control. Nationwide coverage, GIS alignment, shared accounts, hosted billing, and a standalone web application are outside this prototype.
+
+## Build from source
+
+For contributors and researchers who prefer a checkout, install **Node.js 22.19+, npm, and Git**, then run:
+
+```sh
+git clone https://github.com/jestatsio/plot-and-kin.git
+cd plot-and-kin
+npm ci
+npm run build
+node dist/cli.js setup
+```
+
+Choose your client and **Save on this computer**, then restart the client. Keep the checkout and Node executable in place for this installation. Run `node dist/cli.js demo` to generate a synthetic dossier without connecting a client. That CLI demo uses temporary records and never invents a researcher approval.
+
+See [development checks](docs/getting-started.md#development-and-validation) before contributing. Improvements to source coverage, evidence handling, and reproducible case evaluation are welcome.
+
+## Keep exploring
 
 | Explore | Purpose |
 | --- | --- |
@@ -107,7 +132,5 @@ Review approvals are recorded workflow decisions, not an independently authentic
 | [Client acceptance](docs/client-acceptance.md) | The same research journey in Codex and Claude Desktop |
 | [Validation](docs/validation.md) | What has been checked and what remains unverified |
 | [Researcher pilot](docs/pilot.md) | Recruitment materials and the evaluation protocol |
-
-Contributions to source coverage, evidence handling, and reproducible case evaluation are welcome. Start with the [development checks](docs/getting-started.md#development-and-validation).
 
 [Apache License 2.0](LICENSE) · [Privacy](docs/privacy.md) · Original materials retain their own rights and attribution requirements.

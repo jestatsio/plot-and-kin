@@ -4,24 +4,42 @@
 
 Plot & Kin packages its own Node runtime and native PDF/image dependencies. The default local workflow starts without a terminal, database account, or model API key after a client package is installed. Optional Astra and scan-processing setup still use the guided terminal workflow.
 
-**Release status:** packages are being validated. No public release or Git marketplace catalog has been published yet. The instructions below apply after publication and do not imply an official directory listing. Actual-client acceptance is tracked separately in [client acceptance](client-acceptance.md).
+**Release status:** native preview packages have passed automated checks on Apple Silicon Mac, Intel Mac, and Windows x64. Download them from a successful build below. Public release downloads and the Git marketplace catalog are not published yet. The Apple Silicon Claude Desktop walkthrough verified installation, a fictional sample, citation reading, and dossier export. The full desktop journeys remain on the [client acceptance checklist](client-acceptance.md).
 
 [Getting started](getting-started.md) · [Privacy and data handling](privacy.md) · [Source coverage](source-coverage.md)
+
+## Preview builds available now
+
+1. Open [Build researcher installers](https://github.com/jestatsio/plot-and-kin/actions/workflows/release.yml) while signed in to GitHub.
+2. Select a completed, successful run, preferably from `main`. Open its **Artifacts** section.
+3. Download the artifact for your computer:
+
+| Computer | Artifact |
+| --- | --- |
+| Mac with Apple Silicon | `release-darwin-arm64` |
+| Mac with Intel processor | `release-darwin-x64` |
+| Windows x64 | `release-win32-x64` |
+
+4. Extract the downloaded artifact ZIP. Inside, choose the **`.mcpb`** for Claude Desktop or the **`-codex.zip`** for Codex. Follow the matching client instructions below. The native `.tar.gz` or `.zip` is for guided terminal setup.
+
+Each artifact includes the platform packages, version information, and SHA-256 checksum files. GitHub requires a signed-in account to download workflow artifacts, and the downloads expire according to the repository's retention settings. If a run's artifacts have expired, choose a newer successful run. See [GitHub's artifact download guide](https://docs.github.com/en/actions/how-tos/manage-workflow-runs/download-workflow-artifacts).
+
+These are preview builds. A successful automated run is separate from completing the research journey in each desktop client. Published releases will provide stable downloads without this workflow-artifact step.
 
 ## Choose your package
 
 | Client / path | File for your platform | First step |
 | --- | --- | --- |
 | Claude Desktop | `plot-and-kin-VERSION-PLATFORM.mcpb` | Settings → Extensions → Advanced settings → Install extension |
-| Codex, Git marketplace | The `plugins` branch of `jestatsio/plot-and-kin` | Add the marketplace source, then install the entry for your computer |
+| Codex, Git marketplace, after publication | The `plugins` branch of `jestatsio/plot-and-kin` | Add the marketplace source, then install the entry for your computer |
 | Codex, offline marketplace | `plot-and-kin-VERSION-PLATFORM-codex.zip` | Extract, add its folder as a local marketplace source, then install Plot & Kin |
-| Both clients, guided setup | Native `.tar.gz` or `.zip`, installed by `install.sh` or `install.ps1` | Run the one-command installer in [Getting started](getting-started.md) |
+| Both clients, guided setup | Native `.tar.gz` or `.zip` | Extract the preview and run its bundled setup, or use the [one-command installer after release publication](getting-started.md#after-a-packaged-release-is-published) |
 
 Platforms are `darwin-arm64` for Apple Silicon, `darwin-x64` for Intel Mac, and `win32-x64` for Windows x64. Windows ARM64 is not a validated target. Select the matching architecture. Packages are deliberately larger because they include their runtime.
 
 ## Claude Desktop
 
-Download the matching `.mcpb` from the [Releases page](https://github.com/jestatsio/plot-and-kin/releases). Select it using **Settings → Extensions → Advanced settings → Install extension**. Review the package identity and permissions, then install. No required configuration fields appear for the default local workflow.
+Get the matching `.mcpb` from a [preview build](#preview-builds-available-now), or from the [Releases page](https://github.com/jestatsio/plot-and-kin/releases) once a release is published. Select it using **Settings → Extensions → Advanced settings → Install extension**. Review the package identity and permissions, then install. No required configuration fields appear for the default local workflow.
 
 Start a new Claude conversation and ask **“Help me get started with Plot & Kin.”** Choose an address or a visibly fictional sample. Research is saved under your home directory's `.plot-and-kin` folder, or your previously configured library.
 
@@ -49,7 +67,7 @@ Every platform package is checksum-verified when the catalog is built. Refresh t
 
 ## Codex offline marketplace
 
-Extract the entire `-codex.zip` to a permanent folder. Keep its hidden `.agents` folder with its `plugins` folder. Add that root folder as a local marketplace source in a supporting client. The Codex CLI equivalent is:
+Get the matching `-codex.zip` from a [preview build](#preview-builds-available-now), then extract the entire package to a permanent folder. Keep its hidden `.agents` folder with its `plugins` folder. Add that root folder as a local marketplace source in a supporting client. The Codex CLI equivalent is:
 
 ```sh
 codex plugin marketplace add "/absolute/path/to/plot-and-kin-codex"
@@ -60,11 +78,29 @@ Select **Plot & Kin** and install it in the desktop Plugins interface after addi
 
 For updates, extract the new package, update the marketplace source, refresh it, and reopen the client. Both the MCP tools and the research skill travel with the package.
 
+## Guided setup from a preview
+
+Extract the native `.tar.gz` or `.zip` from your platform's preview artifact. From the folder containing its extracted `plot-and-kin` directory, run:
+
+**macOS:**
+
+```sh
+./plot-and-kin/bin/node ./plot-and-kin/dist/cli.js setup
+```
+
+**Windows PowerShell:**
+
+```powershell
+& .\plot-and-kin\bin\node.exe .\plot-and-kin\dist\cli.js setup
+```
+
+Choose Codex, Claude Desktop, or both, then **Save on this computer**. Restart the selected clients and ask **“Help me get started with Plot & Kin.”** Keep the extracted folder in place because setup registers its runtime path. Use one installation method per client to avoid duplicate tools.
+
 ## Optional Astra and scan processing
 
 The default local workflow is ready without setup. When you want Astra or paid document interpretation, use the guided terminal setup with **`--client none`**. This changes saved preferences and credentials without registering a second MCP server beside the installed plugin.
 
-You can use the runtime already installed by guided setup. Alternatively, download the native `.tar.gz` or `.zip` for your platform from the same release and extract its `plot-and-kin` folder. From the folder containing that extracted directory, connect Astra with:
+You can use the runtime already installed by guided setup. Alternatively, download the native `.tar.gz` or `.zip` for your platform from a preview build or published release and extract its `plot-and-kin` folder. From the folder containing that extracted directory, connect Astra with:
 
 **macOS:**
 
