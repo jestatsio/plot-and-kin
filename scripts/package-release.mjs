@@ -50,7 +50,7 @@ try {
   await writeFile(runtimeArchive, runtime);
   const runtimeDirectory = runtimeFile.replace(/\.(?:tar\.gz|zip)$/, '');
   if (process.platform === 'win32') {
-    run('powershell.exe', ['-NoProfile', '-NonInteractive', '-Command', 'Expand-Archive -LiteralPath $env:PK_ARCHIVE -DestinationPath $env:PK_UNPACK'], { env: { ...process.env, PK_ARCHIVE: runtimeArchive, PK_UNPACK: work } });
+    run('powershell.exe', ['-NoProfile', '-NonInteractive', '-Command', "$ErrorActionPreference = 'Stop'; Add-Type -AssemblyName System.IO.Compression.FileSystem; [IO.Compression.ZipFile]::ExtractToDirectory($env:PK_ARCHIVE, $env:PK_UNPACK)"], { env: { ...process.env, PK_ARCHIVE: runtimeArchive, PK_UNPACK: work } });
     await cp(join(work, runtimeDirectory, 'node.exe'), join(stage, 'bin/node.exe'));
   } else {
     run('tar', ['-xzf', runtimeArchive, '-C', work]);
@@ -64,7 +64,9 @@ try {
   const artifactName = `plot-and-kin-${pkg.version}-${platform}.${process.platform === 'win32' ? 'zip' : 'tar.gz'}`;
   const artifact = join(output, artifactName);
   if (process.platform === 'win32') {
-    run('powershell.exe', ['-NoProfile', '-NonInteractive', '-Command', 'Compress-Archive -LiteralPath $env:PK_STAGE -DestinationPath $env:PK_ARTIFACT -Force'], { env: { ...process.env, PK_STAGE: stage, PK_ARTIFACT: artifact } });
+    await rm(artifact, { force: true });
+    // Include the base directory so every release retains its plot-and-kin root.
+    run('powershell.exe', ['-NoProfile', '-NonInteractive', '-Command', "$ErrorActionPreference = 'Stop'; Add-Type -AssemblyName System.IO.Compression.FileSystem; [IO.Compression.ZipFile]::CreateFromDirectory($env:PK_STAGE, $env:PK_ARTIFACT, [IO.Compression.CompressionLevel]::Optimal, $true)"], { env: { ...process.env, PK_STAGE: stage, PK_ARTIFACT: artifact } });
   } else {
     run('tar', ['-czf', artifact, '-C', work, 'plot-and-kin']);
   }

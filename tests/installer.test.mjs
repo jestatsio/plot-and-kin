@@ -14,9 +14,9 @@ const supported = ['darwin-arm64', 'darwin-x64', 'win32-x64'].includes(platform)
 const asset = `plot-and-kin-${version}-${platform}.${process.platform === 'win32' ? 'zip' : 'tar.gz'}`;
 const release = join(root, 'artifacts/release');
 
-test('verified native installer preserves settings, supports rerun, and rejects damaged downloads', { skip: !supported, timeout: 300_000 }, async () => {
+test('verified native installer preserves settings, supports rerun, and rejects damaged downloads', { skip: !supported, timeout: process.platform === 'win32' ? 900_000 : 300_000 }, async () => {
   // Run after release:package. An absent archive is a failure, never an implicit pass.
-  const work = await mkdtemp(join(tmpdir(), 'pk-installer-test-'));
+  const work = await mkdtemp(join(tmpdir(), 'pk-installer-é space-'));
   const fixture = join(work, 'downloads');
   const home = join(work, 'researcher');
   const settings = join(home, '.plot-and-kin');
@@ -51,9 +51,15 @@ test('verified native installer preserves settings, supports rerun, and rejects 
       command = '/bin/sh';
       commandArgs = [join(root, 'scripts/install.sh'), ...args];
     }
-    const run = () => spawnSync(command, commandArgs, { env, encoding: 'utf8', timeout: 120_000 });
+    // Native Windows extraction and antivirus scanning can exceed two minutes.
+    // Keep each invocation bounded and leave the existing macOS limit unchanged.
+    const run = () => spawnSync(command, commandArgs, { env, encoding: 'utf8', timeout: process.platform === 'win32' ? 300_000 : 120_000 });
+    const diagnostics = result => [
+      `Installer status=${result.status}, signal=${result.signal ?? 'none'}, error=${result.error?.code ?? 'none'}`,
+      result.error?.message ?? '', result.stdout, result.stderr,
+    ].join('\n');
     const first = run();
-    assert.equal(first.status, 0, first.stdout + first.stderr);
+    assert.equal(first.status, 0, diagnostics(first));
     const target = join(installRoot, 'versions', `${version}-${platform}`);
     assert.match(await readFile(join(target, '.archive-sha256'), 'utf8'), /^[a-f0-9]{64}\s*$/);
     assert.equal(await readFile(join(settings, 'existing-research.txt'), 'utf8'), 'Keep my research');
@@ -67,13 +73,13 @@ test('verified native installer preserves settings, supports rerun, and rejects 
     assert.equal(claude.mcpServers['plot-and-kin'].command, codex.mcp_servers['plot-and-kin'].command);
     const installed = await readFile(join(target, 'release.json'), 'utf8');
     const rerun = run();
-    assert.equal(rerun.status, 0, rerun.stdout + rerun.stderr);
+    assert.equal(rerun.status, 0, diagnostics(rerun));
     assert.equal(await readFile(join(target, 'release.json'), 'utf8'), installed);
     assert.equal((await readdir(join(installRoot, 'versions'))).length, 1);
     await writeFile(join(fixture, asset), 'damaged download');
     const failed = run();
-    assert.notEqual(failed.status, 0);
-    assert.match(failed.stdout + failed.stderr, /checksum did not match/i);
+    assert.notEqual(failed.status, 0, diagnostics(failed));
+    assert.match(failed.stdout + failed.stderr, /checksum did not match/i, diagnostics(failed));
     assert.equal(await readFile(join(target, 'release.json'), 'utf8'), installed);
     assert.equal(await readFile(join(settings, 'existing-research.txt'), 'utf8'), 'Keep my research');
     assert.ok(!(await readdir(installRoot)).includes('install.lock'));

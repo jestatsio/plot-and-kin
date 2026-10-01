@@ -35,21 +35,29 @@ try {
     $archive = Join-Path $work $asset
     Get-ReleaseFile "$url/SHA256SUMS.txt" $checksums
     Get-ReleaseFile "$url/$asset" $archive
+    Write-Host 'Verifying the download...'
     $checksumLines = @(Get-Content -LiteralPath $checksums | Where-Object { $_ -match ('^[0-9a-f]{64}  ' + [regex]::Escape($asset) + '$') })
     if ($checksumLines.Count -ne 1) { throw 'The release does not contain one valid checksum for this PC.' }
     $expected = $checksumLines[0].Substring(0, 64)
     if ((Get-FileHash -LiteralPath $archive -Algorithm SHA256).Hash.ToLowerInvariant() -ne $expected) { throw 'The download checksum did not match. Nothing was activated. Run the installer again to retry the download.' }
-    Expand-Archive -LiteralPath $archive -DestinationPath $work
+    Write-Host 'Unpacking the runtime...'
+    # The .NET API avoids the per-entry PowerShell pipeline overhead in Expand-Archive.
+    # The two-argument overload works on Windows PowerShell 5.1 and rejects paths
+    # that would escape the destination directory.
+    Add-Type -AssemblyName System.IO.Compression.FileSystem
+    [IO.Compression.ZipFile]::ExtractToDirectory($archive, $work)
     $extracted = Join-Path $work 'plot-and-kin'
     $target = Join-Path $versions "$version-win32-x64"
     $extractedNode = Join-Path $extracted 'bin\node.exe'
     if (-not (Test-Path -LiteralPath $extractedNode -PathType Leaf)) { throw 'The release is missing its runtime.' }
+    Write-Host 'Checking the downloaded runtime...'
     & $extractedNode (Join-Path $extracted 'scripts\smoke-release.mjs') $version 'win32-x64'
     if ($LASTEXITCODE -ne 0) { throw 'The downloaded runtime did not pass its health check. Existing installations are preserved.' }
     [IO.File]::WriteAllText((Join-Path $extracted '.archive-sha256'), $expected)
     if (Test-Path -LiteralPath $target) {
         $marker = Join-Path $target '.archive-sha256'
         if (-not (Test-Path -LiteralPath $marker) -or (Get-Content -Raw -LiteralPath $marker).Trim() -ne $expected) { throw 'This version already exists with different contents. Existing installations were preserved. Choose a newer release or inspect the version directory.' }
+        Write-Host 'Checking the existing installation...'
         & (Join-Path $target 'bin\node.exe') (Join-Path $target 'scripts\smoke-release.mjs') $version 'win32-x64'
         if ($LASTEXITCODE -ne 0) { throw 'The existing runtime failed its health check. Your research is preserved. Move the affected runtime version directory aside and run setup again.' }
     } else { Move-Item -LiteralPath $extracted -Destination $target }
