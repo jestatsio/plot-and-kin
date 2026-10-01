@@ -16,6 +16,8 @@ $pkCli = Join-Path $pkRuntime 'plot-and-kin-codex\plugins\plot-and-kin\dist\cli.
 $pkLock = Join-Path $pkRoot '.runtime-lock'
 $pkStage = $null
 $pkLockHandle = $null
+$pkChild = $null
+$pkChildStarted = $false
 function Test-PkReady {
   $pkMarker = Join-Path $pkRuntime '.payload-sha256'
   return ((Test-Path -LiteralPath $pkNode -PathType Leaf) -and (Test-Path -LiteralPath $pkCli -PathType Leaf) -and (Test-Path -LiteralPath $pkMarker -PathType Leaf) -and ([IO.File]::ReadAllText($pkMarker).Trim() -eq $pkExpected))
@@ -43,12 +45,47 @@ try {
     }
     $pkLockHandle.Dispose(); $pkLockHandle = $null
   }
-  & $pkNode '--disable-warning=ExperimentalWarning' $pkCli @ServerArguments
-  exit $LASTEXITCODE
+  if ($ServerArguments.Count -ne 1 -or $ServerArguments[0] -ne 'serve') { throw 'This plugin launcher supports only the serve command.' }
+  # PowerShell's native-command pipeline does not forward its redirected stdin
+  # to the child and may decode/re-encode output. MCP requires a live duplex
+  # byte stream, so bridge the three raw .NET streams concurrently instead.
+  $pkStart = New-Object Diagnostics.ProcessStartInfo
+  $pkStart.FileName = $pkNode
+  $pkStart.Arguments = '--disable-warning=ExperimentalWarning "' + $pkCli + '" serve'
+  $pkStart.UseShellExecute = $false
+  $pkStart.CreateNoWindow = $true
+  $pkStart.RedirectStandardInput = $true
+  $pkStart.RedirectStandardOutput = $true
+  $pkStart.RedirectStandardError = $true
+  $pkChild = New-Object Diagnostics.Process
+  $pkChild.StartInfo = $pkStart
+  if (-not $pkChild.Start()) { throw 'The bundled research server could not start.' }
+  $pkChildStarted = $true
+  $pkInput = [Console]::OpenStandardInput().CopyToAsync($pkChild.StandardInput.BaseStream)
+  $pkOutput = $pkChild.StandardOutput.BaseStream.CopyToAsync([Console]::OpenStandardOutput())
+  $pkErrors = $pkChild.StandardError.BaseStream.CopyToAsync([Console]::OpenStandardError())
+  $pkInputClosed = $false
+  while (-not $pkChild.WaitForExit(50)) {
+    if (-not $pkInputClosed -and $pkInput.IsCompleted) {
+      # Propagate host EOF so Node and its SQLite handles exit with the client.
+      $null = $pkInput.GetAwaiter().GetResult()
+      $pkChild.StandardInput.Close()
+      $pkInputClosed = $true
+    }
+    if ($pkOutput.IsFaulted -or $pkErrors.IsFaulted) { throw 'The client closed its MCP output stream.' }
+  }
+  # Drain both output streams before returning the child's exit status.
+  $null = $pkOutput.GetAwaiter().GetResult()
+  $null = $pkErrors.GetAwaiter().GetResult()
+  exit $pkChild.ExitCode
 } catch {
   [Console]::Error.WriteLine('Plot & Kin: ' + $_.Exception.Message)
   exit 1
 } finally {
+  if ($null -ne $pkChild) {
+    try { if ($pkChildStarted -and -not $pkChild.HasExited) { $pkChild.Kill(); $pkChild.WaitForExit() } }
+    finally { $pkChild.Dispose() }
+  }
   if ($null -ne $pkLockHandle) { $pkLockHandle.Dispose() }
   # Leave the empty lock file in place. Deleting it can race a second opener.
   if ($null -ne $pkStage -and (Test-Path -LiteralPath $pkStage)) { Remove-Item -LiteralPath $pkStage -Recurse -Force }

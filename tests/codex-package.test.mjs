@@ -1,11 +1,12 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { execFileSync, spawnSync } from 'node:child_process';
+import { execFileSync, spawn, spawnSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
 import { cp, mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { createInterface } from 'node:readline';
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js';
 import { codexManifests } from '../scripts/package-codex-plugin.mjs';
@@ -44,7 +45,7 @@ async function unpack(archive, destination) {
   } else execFileSync('/usr/bin/unzip', ['-q', archive, '-d', destination], { timeout: 120_000 });
 }
 
-async function connect(plugin, data) {
+async function launchParameters(plugin, data) {
   const config = JSON.parse(await readFile(join(plugin, 'mcp.json'), 'utf8')).mcpServers['plot-and-kin'];
   const expand = value => value.replaceAll('${PLUGIN_ROOT}', plugin);
   // No development Node/npm/Python on PATH, no inherited provider credentials,
@@ -53,11 +54,17 @@ async function connect(plugin, data) {
   const windowsShell = config.command === 'powershell.exe';
   const systemRoot = Object.entries(env).find(([key]) => /^SystemRoot$/i.test(key))?.[1];
   const systemPath = windowsShell ? join(systemRoot, 'System32', 'WindowsPowerShell', 'v1.0') : '';
-  const transport = new StdioClientTransport({
+  return {
     command: resolveCommand(config.command, plugin), args: config.args.map(expand),
     cwd: data, env: { ...env, PATH: systemPath, ...(windowsShell ? { PSModulePath: 'C:\\missing-powershell-7-modules' } : {}), PK_STORAGE: 'local', PK_LIBRARY_DIR: data, PK_SETTINGS_DIR: join(data, 'settings') },
     stderr: 'pipe',
-  });
+  };
+}
+
+async function connect(plugin, data) {
+  const params = await launchParameters(plugin, data);
+  const windowsShell = params.command === 'powershell.exe';
+  const transport = new StdioClientTransport(params);
   const client = new Client({ name: 'codex-package-acceptance', version: '1.0.0' });
   const owned = { transport, windowsShell, stderr: '' };
   clientProcesses.set(client, owned);
@@ -70,6 +77,54 @@ async function connect(plugin, data) {
     throw failure;
   }
   return client;
+}
+
+async function verifyWindowsLauncherEof(plugin, data) {
+  const params = await launchParameters(plugin, data);
+  const child = spawn(params.command, params.args, { cwd: params.cwd, env: params.env, windowsHide: true, stdio: ['pipe', 'pipe', 'pipe'] });
+  let stderr = '';
+  child.stderr.on('data', bytes => { stderr = (stderr + bytes.toString('utf8')).slice(-16_384); });
+  const lines = createInterface({ input: child.stdout });
+  let exitResult;
+  let primaryError;
+  const exited = new Promise(resolveExit => child.once('close', (code, signal) => { exitResult = { code, signal }; resolveExit(exitResult); }));
+  const timers = [];
+  const deadline = (promise, label) => Promise.race([promise, new Promise((_, reject) => {
+    timers.push(setTimeout(() => reject(new Error(`${label}: ${stderr || '(no launcher stderr)'}`)), 15_000));
+  })]);
+  try {
+    const initialized = new Promise((resolveInitialized, reject) => {
+      child.once('error', reject);
+      child.stdin.once('error', reject);
+      child.once('close', () => reject(new Error(`Launcher closed before MCP initialize: ${stderr}`)));
+      lines.on('line', line => {
+        try {
+          const message = JSON.parse(line);
+          if (message.id === 1) resolveInitialized(message);
+        } catch (error) { reject(error); }
+      });
+    });
+    child.stdin.write(JSON.stringify({ jsonrpc: '2.0', id: 1, method: 'initialize', params: { protocolVersion: '2025-03-26', capabilities: {}, clientInfo: { name: 'eof-regression', version: '1.0.0' } } }) + '\n');
+    assert.ok((await deadline(initialized, 'MCP initialize timed out')).result?.serverInfo);
+    child.stdin.end();
+    // No SDK timeout or force-kill here. Exit zero proves that EOF reached Node
+    // and the launcher waited for it instead of leaving its child behind.
+    assert.deepEqual(await deadline(exited, 'Launcher did not exit after client EOF'), { code: 0, signal: null });
+  } catch (error) {
+    primaryError = error;
+    throw error;
+  } finally {
+    for (const timer of timers) clearTimeout(timer);
+    lines.close();
+    let cleanupError;
+    if (!exitResult && child.pid) {
+      const result = spawnSync(join(process.env.SystemRoot ?? process.env.SYSTEMROOT, 'System32', 'taskkill.exe'), ['/PID', String(child.pid), '/T', '/F'], { encoding: 'utf8', windowsHide: true, timeout: 15_000 });
+      if (result.error || (result.status !== 0 && result.status !== 128)) cleanupError = new Error(`Owned EOF-test process cleanup failed (${result.status}): ${result.error?.message ?? result.stderr}`);
+    }
+    child.stdin.destroy(); child.stdout.destroy(); child.stderr.destroy();
+    if (cleanupError && primaryError) primaryError.stack += `\n${cleanupError.stack}`;
+    else if (cleanupError) throw cleanupError;
+  }
 }
 
 async function closeClient(client) {
@@ -233,6 +288,10 @@ test('offline Git marketplace extracts once under concurrent launch and rejects 
     phase = 'owned process-tree shutdown';
     await Promise.all(clients.map(client => closeClient(client)));
     clients.length = 0;
+    if (process.platform === 'win32') {
+      phase = 'normal Windows launcher EOF shutdown';
+      await verifyWindowsLauncherEof(plugin, firstData);
+    }
     // Every launch checks the shipped bytes even after a runtime was cached.
     phase = 'tampered archive rejection';
     await writeFile(join(plugin, 'runtime.zip'), 'Modified archive');
