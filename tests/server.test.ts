@@ -1,0 +1,31 @@
+import { afterEach, describe, expect, it } from 'vitest';
+import { Client } from '@modelcontextprotocol/sdk/client/index.js';
+import { InMemoryTransport } from '@modelcontextprotocol/sdk/inMemory.js';
+import { createServer } from '../src/server.js';
+import { Application } from '../src/application.js';
+import { readConfig } from '../src/config.js';
+import { mkdtemp, rm } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+const cleanup:Array<()=>Promise<unknown>>=[];
+afterEach(async()=>{for(const f of cleanup.splice(0).reverse()) await f();});
+describe.each(['codex-contract','claude-desktop-contract'])('%s protocol journey',name=>{
+ it('discovers tools/prompts and conducts the same cited research workflow',async()=>{
+   const dir=await mkdtemp(join(tmpdir(),'pk-mcp-'));cleanup.push(()=>rm(dir,{recursive:true,force:true}));
+   const server=createServer(new Application(readConfig({PK_STORAGE:'memory',PK_LIBRARY_DIR:dir})));
+   const client=new Client({name,version:'0.1.0'},{capabilities:{}});
+   const [ct,st]=InMemoryTransport.createLinkedPair();await server.connect(st);await client.connect(ct);cleanup.push(()=>client.close());cleanup.push(()=>server.close());
+   const tools=await client.listTools();expect(tools.tools.some(t=>t.name==='project_create')).toBe(true);
+   const prompt=await client.getPrompt({name:'property_history',arguments:{address:'1920 Rosedale Street NE',question:'Who lived here?'}});expect(prompt.messages[0]?.content).toHaveProperty('text',expect.stringContaining('approval'));
+   const created=await client.callTool({name:'project_create',arguments:{address:'1920 Rosedale Street NE',question:'Who lived here?'}});
+   const project=(created.structuredContent as {result:{projectId:string}}).result;
+   const runResult=await client.callTool({name:'run_start',arguments:{projectId:project.projectId}});
+   const run=(runResult.structuredContent as {result:{_id:string}}).result;
+   const imported=await client.callTool({name:'source_import',arguments:{projectId:project.projectId,runId:run._id,title:'Sample',base64:Buffer.from('Jane Example resided here in 1900.').toString('base64'),mimeType:'text/plain'}});
+   expect(imported.isError).not.toBe(true);const source=(imported.structuredContent as {result:{_id:string}}).result;
+   const processed=await client.callTool({name:'page_process',arguments:{projectId:project.projectId,runId:run._id,sourceId:source._id,page:1}});expect(processed.isError).not.toBe(true);
+   const found=await client.callTool({name:'evidence_search',arguments:{projectId:project.projectId,query:'Jane'}});expect(JSON.stringify(found)).toContain('Jane Example');
+   const missing=await client.callTool({name:'project_context',arguments:{projectId:'missing'}});expect(missing.isError).toBe(true);expect(JSON.stringify(missing)).not.toContain('stack');
+   const bad=await client.callTool({name:'page_process',arguments:{projectId:project.projectId,runId:run._id,sourceId:source._id,page:0}});expect(bad.isError).toBe(true);
+ });
+});
