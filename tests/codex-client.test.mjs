@@ -21,6 +21,7 @@ async function appServer(env, cwd, signal) {
   let diagnostic = '';
   let closed = false;
   let treeClosed = false;
+  let terminationRequested = false;
   const pending = new Map();
   child.stderr.on('data', bytes => { diagnostic = (diagnostic + bytes.toString()).slice(-8000); });
   const lines = createInterface({ input: child.stdout });
@@ -51,7 +52,8 @@ async function appServer(env, cwd, signal) {
     child.stdin.write(JSON.stringify({ id, method, params }) + '\n');
   });
   function terminateTree() {
-    if (!child.pid || treeClosed) return;
+    if (!child.pid || terminationRequested || (treeClosed && process.platform === 'win32')) return;
+    terminationRequested = true;
     try {
       if (process.platform === 'win32') {
         const systemRoot = Object.entries(env).find(([key]) => /^SystemRoot$/i.test(key))?.[1];
@@ -61,7 +63,10 @@ async function appServer(env, cwd, signal) {
   }
   signal.addEventListener('abort', terminateTree, { once: true });
   async function close() {
-    child.stdin.end();
+    // Stop the owned tree while its wrapper still exists. Codex may have a
+    // background marketplace clone which can outlive graceful stdin shutdown.
+    // This also exercises case persistence across a hard client restart.
+    terminateTree();
     const force = setTimeout(terminateTree, 5000);
     let deadline;
     try {
@@ -132,5 +137,5 @@ test('real Codex installs both catalog formats and discovers usable tools and sk
         } finally { await app.close(); }
       }
     }
-  } finally { await rm(work, { recursive: true, force: true }); }
+  } finally { await rm(work, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 }); }
 });
