@@ -82,7 +82,7 @@ async function appServer(env, cwd, signal) {
   try {
     await rpc('initialize', { clientInfo: { name: 'plot-and-kin-acceptance', version }, capabilities: { experimentalApi: true } });
     child.stdin.write(JSON.stringify({ method: 'initialized' }) + '\n');
-    return { rpc, close };
+    return { rpc, close, diagnostics: () => diagnostic };
   } catch (error) { await close(); throw error; }
 }
 
@@ -124,7 +124,7 @@ test('real Codex installs both catalog formats and discovers usable tools and sk
           const status = await app.rpc('mcpServerStatus/list', { threadId: thread.id });
           const server = status.data.find(item => item.pluginId === `${name}@plot-and-kin`);
           assert.ok(server, 'Plugin server was not discovered by Codex');
-          assert.equal(server.toolsError, null);
+          assert.equal(server.toolsError, null, `${name}, restart=${restart}: ${server.toolsError}\nCodex diagnostics:\n${app.diagnostics()}`);
           assert.ok(Object.values(server.tools).some(tool => tool.name === 'welcome'), 'Codex must discover real tools, not only an installed plugin');
           const call = async (tool, args = {}) => {
             const result = await app.rpc('mcpServer/tool/call', { threadId: thread.id, server: server.name, tool, arguments: args });
