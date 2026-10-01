@@ -8,6 +8,7 @@ import { LocalBlobStore } from '../src/library.js';
 import { MemoryStore } from '../src/storage.js';
 import { transferLocalProject } from '../src/transfer.js';
 import { ResearchService } from '../src/research.js';
+import { createBundle, restoreBundle } from '../src/portability.js';
 
 const cleanup: Array<() => void | Promise<void>> = [];
 afterEach(async () => { for (const action of cleanup.splice(0).reverse()) await action(); });
@@ -44,6 +45,51 @@ describe('explicit case storage routing', () => {
     const f = await fixture();
     await expect(f.local.beginTransfer({ projectId: f.first._id, targetProjectId: f.second._id, operationId: 'collision', destinationId: 'astra-test' })).rejects.toMatchObject({ code: 'TRANSFER_CONFLICT' });
     expect((await f.cases.get(f.second._id, f.second._id))!.data.address).toBe('Second house');
+  });
+
+  it('rejects a local insert when another connection reserves its destination after routing', async () => {
+    const f = await fixture();
+    const transferring = new LocalStore(f.local.path); cleanup.push(() => transferring.close());
+    const target = { ...f.second, _id: 'racing-destination', projectId: 'racing-destination' };
+    const request = { projectId: f.first._id, targetProjectId: target.projectId, operationId: 'racing-transfer', destinationId: 'astra-test' };
+    const listTransfers = f.local.listTransfers.bind(f.local);
+    f.local.listTransfers = async () => {
+      const beforeReservation = await listTransfers();
+      // This connection routed locally before the other client reserved the ID.
+      await transferring.beginTransfer(request);
+      return beforeReservation;
+    };
+    try {
+      await expect(f.cases.insert(target)).rejects.toMatchObject({ code: 'TRANSFER_CONFLICT' });
+    } finally { f.local.listTransfers = listTransfers; }
+    expect(await f.local.get(target.projectId, target._id)).toBeUndefined();
+    expect(await transferring.getTransfer(f.first._id)).toMatchObject({ status: 'transferring' });
+    // Failed transfers still reserve their destination until explicitly cancelled.
+    await transferring.failTransfer(request.projectId, request.operationId);
+    await expect(f.local.insert(target)).rejects.toMatchObject({ code: 'TRANSFER_CONFLICT' });
+    await transferring.cancelTransfer(request.projectId, request.operationId, true);
+    await f.cases.insert(target);
+    expect((await f.cases.get(target.projectId, target._id))!.data.address).toBe('Second house');
+  });
+
+  it('preserves a partial local restore when another connection attempts to reserve its destination', async () => {
+    const f = await fixture();
+    const restoring = new LocalStore(f.local.path); cleanup.push(() => restoring.close());
+    const bundle = await createBundle(f.local, f.blobs, f.second._id);
+    const destination = { targetProjectId: 'partial-restore', operationId: 'restore-one' };
+    const insert = restoring.insert.bind(restoring);
+    restoring.insert = async record => {
+      if (record.kind === 'project') throw new Error('Interrupted before writing the project');
+      await insert(record);
+    };
+    await expect(restoreBundle(restoring, f.blobs, bundle, destination)).rejects.toThrow('Interrupted');
+    restoring.insert = insert;
+    expect(await restoring.get(destination.targetProjectId, destination.targetProjectId)).toBeUndefined();
+    expect(await restoring.list(destination.targetProjectId, 'operation')).toHaveLength(1);
+    await expect(f.local.beginTransfer({ projectId: f.first._id, targetProjectId: destination.targetProjectId, operationId: 'collision', destinationId: 'astra-test' })).rejects.toMatchObject({ code: 'TRANSFER_CONFLICT' });
+    expect(await f.local.getTransfer(f.first._id)).toBeUndefined();
+    await restoreBundle(restoring, f.blobs, bundle, destination);
+    expect((await f.cases.get(destination.targetProjectId, destination.targetProjectId))!.data.address).toBe('Second house');
   });
 
   it('keeps a transferred case visible when Astra is unavailable, without falling back to its local source', async () => {

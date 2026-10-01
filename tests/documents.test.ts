@@ -25,7 +25,7 @@ describe('document processing', () => {
     await expect(processor.inspect(Buffer.from([0,1,2,3]))).rejects.toThrow();
     await expect(processor.inspect(Buffer.from('%PDF-corrupt'))).rejects.toMatchObject({code:'INVALID_DOCUMENT'});
     await expect(processor.inspect(Buffer.from([137,80,78,71,13,10,26,10]))).rejects.toMatchObject({code:'INVALID_DOCUMENT'});
-  });
+  }, 20_000); // The first PDF load initializes the native worker on Windows CI.
   it('renders photos and crops with traceable original coordinates', async () => {
     const bytes=await sharp({create:{width:80,height:40,channels:3,background:'white'}}).png().toBuffer();
     const processor=new DocumentProcessor();

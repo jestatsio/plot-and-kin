@@ -117,6 +117,9 @@ export class LocalStore implements RecordStore {
     return row ? JSON.parse(String(row.metadata)) as LocalTransfer : undefined;
   }
   private assertWritable(db: DatabaseSync, projectId: string): void {
+    // Routing happens before this transaction. Another client may have reserved
+    // the ID since then, including while starting a local backup restoration.
+    if (db.prepare('SELECT 1 FROM transfers WHERE json_extract(metadata, \'$.targetProjectId\') = ?').get(projectId)) throw new PKError('TRANSFER_CONFLICT', 'This identifier is reserved for an Astra case transfer. Choose a fresh local destination, or explicitly cancel the incomplete transfer first.');
     const transfer = this.transfer(db, projectId);
     if (transfer?.status === 'complete') throw new PKError('PROJECT_MOVED', 'This case was moved to Astra. Open its Astra location to continue. The local copy is retained for recovery.');
     if (transfer?.status === 'transferring') throw new PKError('TRANSFER_IN_PROGRESS', 'This case is being transferred. Resume or cancel that transfer before making changes.');
@@ -168,7 +171,7 @@ export class LocalStore implements RecordStore {
     for (const [key, value] of Object.entries(input)) requireText(value, key, 1000);
     return this.transaction(db => {
       if (db.prepare('SELECT 1 FROM transfers WHERE project_id <> ? AND json_extract(metadata, \'$.targetProjectId\') = ?').get(input.projectId, input.targetProjectId)) throw new PKError('TRANSFER_CONFLICT', 'This destination identifier is reserved by another case transfer. Choose a fresh destination.');
-      if (db.prepare('SELECT 1 FROM records WHERE project_id = ? AND kind = \'project\'').get(input.targetProjectId)) throw new PKError('TRANSFER_CONFLICT', 'The destination identifier belongs to a local case. Choose a fresh destination.');
+      if (db.prepare('SELECT 1 FROM records WHERE project_id = ?').get(input.targetProjectId)) throw new PKError('TRANSFER_CONFLICT', 'The destination identifier belongs to a local case or an incomplete restore. Choose a fresh destination.');
       const records = this.records(db, input.projectId);
       if (!records.some(record => record.kind === 'project' && record._id === input.projectId)) throw new PKError('NOT_FOUND', 'Local case was not found');
       const current = this.transfer(db, input.projectId);
