@@ -10,7 +10,7 @@ on:
     paths:
       - 'src/**'
       - 'scripts/**'
-      - 'tests/installer.test.mjs'
+      - 'tests/**'
       - 'package*.json'
       - '.github/workflows/release.yml'
 permissions:

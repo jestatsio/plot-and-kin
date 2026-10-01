@@ -196,7 +196,7 @@ describe('portable research dossiers', () => {
     const destination = new TestStore(); const files = new TestBlobs();
     await expect(restoreBundle(destination, files, bundle, { targetProjectId: 'new', operationId: 'oversized' })).rejects.toThrow(/asset.*size|size.*limit/i);
     expect(destination.writes).toBe(0); expect(files.writes).toBe(0);
-  });
+  }, 20_000); // Hashing and serializing the full-size boundary fixture is slower on hosted Intel runners.
   it('rejects unreferenced assets before any destination writes', async () => {
     const { store, blobs } = await fixture(); const bundle = await createBundle(store, blobs, 'case-1');
     const bytes = Buffer.from('unreferenced original');
