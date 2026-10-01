@@ -1,4 +1,6 @@
-import { afterEach, describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
+import sharp from 'sharp';
+import type { PKRecord } from '../src/types.js';
 import { mkdtemp, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -31,5 +33,33 @@ describe('complete research workflow',()=>{
    const a=await app();const p=await a.research.createProject({address:'One',question:'History?'});const r=await a.research.startRun(p.projectId,{});
    await expect(a.importDocument(p.projectId,r._id,{title:'Invalid',base64:'not-base64!'})).rejects.toThrow();
    await expect(a.importDocument(p.projectId,r._id,{title:'Ambiguous',base64:'YQ==',url:'https://example.com'})).rejects.toThrow();
+ });
+});
+
+describe('paid processing crash recovery',()=>{
+ async function scanned(store=new MemoryStore()) {
+   const d=await mkdtemp(join(tmpdir(),'pk-scanned-'));dirs.push(d);
+   const config=readConfig({PK_STORAGE:'memory',PK_LIBRARY_DIR:d});
+   config.processing={provider:'openai',model:'test-model',apiKey:'not-a-real-key',pricing:{inputPerMillion:1,outputPerMillion:1,version:new Date().toISOString().slice(0,10)},maxOutputTokens:100,maxInputTokens:10000};
+   const provider={estimateMaxCost:()=>0.1,process:vi.fn(async()=>({extraction:{text:'Original handwritten words'},usage:{inputTokens:100,outputTokens:20},costUsd:0.01,provider:'openai' as const,model:'test-model',pricingVersion:config.processing!.pricing.version}))};
+   const a=new Application(config,{store,provider});
+   const p=await a.research.createProject({address:'Test',question:'History?'});const r=await a.research.startRun(p._id);
+   const png=await sharp({create:{width:20,height:20,channels:3,background:'#fff'}}).png().toBuffer();
+   const s=await a.importDocument(p._id,r._id,{title:'Handwritten page',base64:png.toString('base64')});
+   return {a,p,r,s,provider,config};
+ }
+ it('finishes a saved model result after interrupted passage storage without another charge',async()=>{
+   class FailPassage extends MemoryStore { once=true;override async insert(record:PKRecord){if(record.kind==='passage'&&this.once){this.once=false;throw new Error('disk/network interruption');}return super.insert(record);}}
+   const {a,p,r,s,provider}=await scanned(new FailPassage());
+   await expect(a.processPage(p._id,r._id,s._id,1)).rejects.toThrow();
+   expect((await a.processPage(p._id,r._id,s._id,1)).data.text).toBe('Original handwritten words');
+   expect(provider.process).toHaveBeenCalledTimes(1);
+ });
+ it('reuses completed model results after portable restore changes project and source ids',async()=>{
+   const {a,p,r,s,provider,config}=await scanned();await a.processPage(p._id,r._id,s._id,1);
+   const bundle=await a.backup(p._id);const d=await mkdtemp(join(tmpdir(),'pk-restored-'));dirs.push(d);
+   const b=new Application({...config,libraryDir:d},{store:new MemoryStore(),provider});
+   await b.restore(bundle,'restored-scanned','restore-model');const r2=await b.research.startRun('restored-scanned');const s2=(await b.store.list('restored-scanned','source'))[0]!;
+   expect((await b.processPage('restored-scanned',r2._id,s2._id,1)).data.text).toBe('Original handwritten words');expect(provider.process).toHaveBeenCalledTimes(1);
  });
 });
