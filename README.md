@@ -19,7 +19,7 @@
 
 **Plot & Kin helps professional researchers turn property-history questions into reviewable evidence dossiers.** Start with an address and a question. Gather sources, trace people and places, compare conflicting accounts, and carry every conclusion back to its evidence.
 
-An open-source MCP server and Codex workflow plugin, built for **Codex and Claude Desktop**. The service runs on your machine, research records live in your own Astra database, and original documents stay in your local library.
+An open-source MCP server and Codex workflow plugin, built for **Codex and Claude Desktop**. The service runs on your machine. Research saves locally by default, with an optional guided connection to your own Astra database. Original documents stay in your local library.
 
 <p align="center">
   <a href="https://jestatsio.github.io/plot-and-kin/"><img src="docs/site/assets/dossier-desktop.jpg" alt="A Plot & Kin HTML dossier showing a synthetic property-history case with proposed findings, a timeline, source evidence, and research history." width="100%"></a>
@@ -45,21 +45,27 @@ flowchart LR
   D -->|Questions remain| B
 ```
 
-## Try a complete example
+## Start with an address. Keep going tomorrow.
 
-Requires **Node.js 22.19+**. The synthetic demo needs no database credentials or model API key.
+**No database account or model key is needed for public records and text documents.** Guided setup connects Codex, Claude Desktop, or both, then creates persistent local storage.
+
+The one-command installers for macOS and Windows are implemented, but **a packaged release has not yet been published**. Actual desktop-client acceptance is also pending. For now, the developer path requires **Node.js 22.19+, npm, and Git**:
 
 ```sh
 git clone https://github.com/jestatsio/plot-and-kin.git
 cd plot-and-kin
 npm ci
 npm run build
-node dist/cli.js demo
+node dist/cli.js setup
 ```
 
-Open the HTML export at the path printed by the command. The demo also creates a portable backup and verifies a restore. Demo records are temporary, exported files persist, and no human approval is invented.
+Choose your client and **Save on this computer**. Restart the selected client, then ask:
 
-**Ready to use your own sources?** Follow [the setup guide](docs/getting-started.md) to configure Astra, connect either client, and optionally enable model processing.
+> Help me research 1920 Rosedale Street NE with Plot & Kin. What do the public building records tell us?
+
+Or ask **“Show me the Plot & Kin sample”** for a labeled fictional case. Review the evidence before approving a finding. Ask for a dossier, then return later with **“Continue my Rosedale Street case.”** The saved research is independent of the original chat.
+
+See [the setup guide](docs/getting-started.md) for the release installer paths, optional Astra connection, scan processing, and recovery. To inspect a standalone synthetic export without connecting a client, run `node dist/cli.js demo`. That CLI demo uses temporary records and never invents a human approval.
 
 ## First stop: Washington, DC
 
@@ -72,11 +78,11 @@ Compiled building information is identified as a research lead. Map excerpts ret
 | Where | What lives there |
 | --- | --- |
 | **Codex or Claude Desktop** | The research conversation, investigation, and explicit review |
-| **Your local service and library** | MCP tools, original files, derived images, and exports |
-| **Your Astra database** | Structured projects, passages, claims, decisions, and research history |
+| **Your computer, by default** | A persistent SQLite research database, local MCP tools, originals, derived images, and exports |
+| **Your Astra database, if connected** | Structured research for cases you explicitly transfer, or for an explicitly selected Astra default |
 | **Your selected model provider, when enabled** | The document or image content required for requested processing |
 
-No model key is required for embedded-text workflows. Model-assisted processing uses your chosen provider and credentials, with no silent provider switching. The $10 default processing cap excludes client charges and database hosting. See [setup and recovery](docs/getting-started.md#processing-budget-and-recovery) and [evidence and data handling](docs/evidence-and-data.md).
+Astra is optional and does not back up local original documents. No model key is required for public-record and embedded-text workflows. Model-assisted processing uses your chosen provider and credentials, with no silent provider switching. The $10 default processing cap excludes client charges and database hosting. See [setup and recovery](docs/getting-started.md#processing-budget-and-recovery) and [evidence and data handling](docs/evidence-and-data.md).
 
 ## Built for a careful first pilot
 

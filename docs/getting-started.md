@@ -2,189 +2,182 @@
 
 **Last updated: October 1, 2026**
 
-Plot & Kin is a local MCP server for property-history research in Codex and Claude Desktop. Research records live in your Astra database. Original documents and derived images live in your local library. Optional model processing uses your chosen provider and credentials.
+Start with an address and a question. Plot & Kin saves cases on your computer by default, so public building records, text documents, evidence review, and dossiers need no Astra account or separate model API key. Codex or Claude Desktop supplies the research conversation. The client's own account and charges are separate.
 
 [Project overview](../README.md) · [Documentation site](https://jestatsio.github.io/plot-and-kin/) · [Evidence and data](evidence-and-data.md) · [Validation](validation.md)
 
-## 1. Build and try the demo
+## Install and connect
 
-Install Node.js **22.19 or later** and npm, then clone and build the project:
+**Release status:** the macOS and Windows installer implementation is available in this repository. A packaged researcher release has not been published yet. The actual desktop-client acceptance checklist remains open. The release commands below are documented for publication and are not available installation paths today.
+
+### Available now: developer checkout
+
+Install Node.js **22.19 or later**, npm, and Git, then run:
 
 ```sh
 git clone https://github.com/jestatsio/plot-and-kin.git
 cd plot-and-kin
 npm ci
 npm run build
-node dist/cli.js demo
+node dist/cli.js setup
 ```
 
-The demo needs no Astra credentials or model API key. It creates an explicitly fictional case, writes Markdown and HTML dossiers plus a portable backup, and exercises a backup/restore round trip. Its JSON output gives you the export paths. Open the HTML file in a browser to inspect the report.
+Setup asks which client to connect and recommends **Save on this computer**. It initializes a persistent SQLite database, tests a real local MCP connection, preserves unrelated client settings, and backs up changed configuration files. The research workflow is installed for Codex, with equivalent server instructions and prompts available to both clients. No JSON or TOML editing is needed.
 
-The demo uses temporary in-memory records. Its exported files persist, but the research records disappear when the process ends. It never fabricates a human approval.
+Restart the selected clients. The setup command verifies the server process, while you confirm the connection in the actual client by asking **“Help me get started with Plot & Kin.”** A successful command does not prove that a desktop application has connected.
 
-To choose where demo artifacts are written:
+Keep the checkout and Node executable in place while using this developer installation. Setup registers their absolute paths. Moving or deleting them requires rerunning setup from the new location.
+
+### After a packaged release is published
+
+These commands will download a versioned bundle, verify its checksum, check its bundled Node runtime and native document dependencies, then launch guided setup. The packaged path requires no separate Node or Git installation.
+
+**macOS Terminal, Apple Silicon or Intel:**
 
 ```sh
-PK_LIBRARY_DIR="$PWD/.plot-and-kin-demo" node dist/cli.js demo
+curl -fsSL https://github.com/jestatsio/plot-and-kin/releases/latest/download/install.sh | sh
 ```
 
-## 2. Configure persistent storage
+**Windows PowerShell, x64:**
 
-Set these variables in the environment of the process that launches the server. The [.env.example](../.env.example) file lists the configuration. The application does **not** automatically load a `.env` file.
+```powershell
+& ([scriptblock]::Create((Invoke-RestMethod 'https://github.com/jestatsio/plot-and-kin/releases/latest/download/install.ps1')))
+```
 
-| Variable | Purpose |
+Only use these commands after the [Releases page](https://github.com/jestatsio/plot-and-kin/releases) contains an accepted release for your platform. Windows ARM64 is not a validated target. macOS is the priority, with Windows developed and tested alongside it. Public Codex plugin-directory distribution is a separate future gate, not a prerequisite for this local setup.
+
+Rerun the installer to update or repair configuration. Versioned runtime directories are separate from research and settings. Setup does not remove old runtimes, cases, or the library. If the download or health check fails, it reports the problem before activating that runtime.
+
+### Setup options for developers and administrators
+
+From a built checkout:
+
+```sh
+node dist/cli.js setup --non-interactive --client both --storage local
+```
+
+Choose `--client codex`, `claude`, `both`, or `none`. Optional `--home`, `--settings-dir`, `--library-dir`, `--codex-config`, and `--claude-config` paths support isolated installations and tests. Rerunning setup preserves the saved library location. Use backup and restore to move research to a new library.
+
+The default settings directory is `~/.plot-and-kin/settings`. Client registration contains the runtime command and settings-directory reference. Credentials are kept outside client configuration and outside chat.
+
+## Your first case
+
+Start with any of these requests in either client:
+
+| What you want | What to say |
 | --- | --- |
-| `ASTRA_DB_API_ENDPOINT` | Endpoint of your Astra database |
-| `ASTRA_DB_APPLICATION_TOKEN` | Your Astra application token |
-| `ASTRA_DB_KEYSPACE` | Keyspace, default `default_keyspace` |
-| `PK_LIBRARY_DIR` | Local library, default `~/.plot-and-kin` |
-| `PK_IMPORT_DIR` | Allowed local upload directory, default the library's `imports` directory |
+| Get oriented | “Help me get started with Plot & Kin.” |
+| Explore without historical claims | “Show me the Plot & Kin sample.” |
+| Research a property | “Research 1920 Rosedale Street NE in Washington, DC. What do the available records say about its early construction?” |
+| Return to saved work | “Continue my Rosedale Street case.” |
+| Review progress | “Show my findings awaiting review and the next useful step.” |
+| Save the result | “Show the dossier here and save an HTML copy.” |
 
-Use absolute library and import paths in desktop-client configurations. Keep credentials in local environment configuration, outside Git and research records.
+The client should ask for the address and question first, then gather relevant facts and source restrictions as needed. If several cases match, it should ask which you mean. You do not need to copy internal project IDs.
 
-Initialize the dedicated collections and check the configuration:
+A first case can use DC public building records without scan processing. The client presents candidate matches and proposed findings with citations. Inspect the evidence and wording before approving, revising, or leaving a finding unresolved. Compiled building information is a lead to examine. A permit date is not automatically a construction date, and ownership does not establish occupancy.
 
-```sh
-node dist/cli.js init
-node dist/cli.js doctor
-```
+The default run allows **30 minutes, 25 external search requests, and 50 processed pages**. Progress and next steps remain saved when a limit stops research. Unsuccessful searches are retained without becoming evidence of absence.
 
-Initialization creates only `pk_records` and `pk_passages`. It does not migrate or reuse unrelated collections. The setup check verifies Astra lexical search support, which is a preview capability. See [validation](validation.md) for the live capability check and its limits. Dependency versions are pinned in [package.json](../package.json) and the lockfile.
+Review decisions record your stated approval and the exact reviewed version. This is an audited chat workflow, not an independently authenticated human-only control.
 
-The default storage mode is Astra. `PK_STORAGE=memory` is an explicit temporary demo/test mode. It is unsuitable for persistent research unless you back up the project before exit.
+### The sample and the CLI demo
 
-## 3. Connect Codex or Claude Desktop
+The in-chat sample is visibly fictional and is saved in your configured storage. It never invents a human approval. The separate `node dist/cli.js demo` command exercises a synthetic dossier and backup/restore round trip using temporary in-memory records. Its exported files persist, but its records disappear when the process ends.
 
-Both clients use the same stdio MCP server and research tools. Set the same Astra and library environment in each client to access the same research. GUI applications do not necessarily inherit terminal environment variables.
+## Where your work lives
 
-Build the checkout before connecting a client. Each configuration below must point to its actual absolute path. If your desktop application cannot find `node`, use the absolute path to your Node executable as `command`.
+Setup prints your actual locations. By default:
 
-### Codex
-
-The local plugin metadata in [.codex-plugin/plugin.json](../.codex-plugin/plugin.json) points to the workflow skill and [mcp.json](../mcp.json). Its MCP entry uses the plugin's `${PLUGIN_ROOT}` expansion.
-
-You can also configure the MCP server directly:
-
-```toml
-[mcp_servers.plot-and-kin]
-command = "node"
-args = ["/absolute/path/to/plot-and-kin/dist/cli.js", "serve"]
-
-[mcp_servers.plot-and-kin.env]
-ASTRA_DB_API_ENDPOINT = "https://YOUR-DATABASE-ENDPOINT"
-ASTRA_DB_APPLICATION_TOKEN = "YOUR-LOCAL-TOKEN"
-ASTRA_DB_KEYSPACE = "default_keyspace"
-PK_LIBRARY_DIR = "/absolute/path/to/your/plot-and-kin-library"
-```
-
-The [research workflow skill](../skills/research-property/SKILL.md) guides bounded investigation, evidence handling, and review.
-
-### Claude Desktop
-
-Add an MCP entry to Claude Desktop's local configuration:
-
-```json
-{
-  "mcpServers": {
-    "plot-and-kin": {
-      "command": "node",
-      "args": ["/absolute/path/to/plot-and-kin/dist/cli.js", "serve"],
-      "env": {
-        "ASTRA_DB_API_ENDPOINT": "https://YOUR-DATABASE-ENDPOINT",
-        "ASTRA_DB_APPLICATION_TOKEN": "YOUR-LOCAL-TOKEN",
-        "ASTRA_DB_KEYSPACE": "default_keyspace",
-        "PK_LIBRARY_DIR": "/absolute/path/to/your/plot-and-kin-library"
-      }
-    }
-  }
-}
-```
-
-The repository's [.mcp.json](../.mcp.json) uses `${CLAUDE_PLUGIN_ROOT}` for plugin-aware clients. Use an absolute path in an ordinary Claude Desktop configuration. The server exposes `property_history` and `review_dossier` MCP prompts as well as its tools.
-
-To start the server manually for protocol inspection:
-
-```sh
-node dist/cli.js serve
-```
-
-`serve` reserves stdin/stdout for MCP messages. Do not paste ordinary chat text into that terminal. Diagnostics use stderr.
-
-Actual installation and conversational acceptance in both desktop applications remain manual checks in [the client checklist](client-acceptance.md). Passing SDK and subprocess tests does not establish host application acceptance.
-
-## 4. Run a research session
-
-A useful opening request in either client is:
-
-> Create a Plot & Kin project for 1920 Rosedale Street NE, Washington, DC. Investigate what the available building records say about its early construction history. Start with the public DC sources, preserve uncertainty, and bring proposed conclusions to me for review.
-
-This is a suggested research request, not a claim about the property.
-
-1. **Define the question.** Capture the address, known information, source restrictions, and intended output.
-2. **Start a bounded run.** The default run allows 30 minutes, 25 external searches, and 50 processed pages. Progress remains available when a limit stops research operations.
-3. **Acquire evidence.** Search the selected public sources or import permitted documents from your import directory. Subscription material enters through permitted manual imports.
-4. **Inspect and correct.** Compare passages with originals. Corrections retain the earlier extraction and its provenance.
-5. **Propose and review.** Link claims to supporting and opposing evidence. Review conclusions and ambiguous identity merges in chat against the exact target revision.
-6. **Export and continue.** Create a dossier for review and a portable backup for preserving the full project. Resume from saved searches, gaps, and next steps.
-
-An address match proposes a lead. Ownership does not establish occupancy. A building's appearance on a map does not establish its construction date. A search with no results does not establish absence.
-
-Review is an audited workflow convention. The service records the stated reviewer, decision, and reviewed version. It does not independently authenticate that a human made the decision.
-
-## 5. Enable optional document processing
-
-Embedded-text import and evidence review do not require a model API key. For scanned pages, handwriting, photographs, and map interpretation, select an OpenAI or Anthropic adapter and supply your own key:
-
-| Variable | Purpose |
+| Location under your home directory | Purpose |
 | --- | --- |
-| `PK_PROVIDER` | `openai` or `anthropic` |
-| `PK_MODEL` | Model identifier supported by the selected provider |
-| `OPENAI_API_KEY` / `ANTHROPIC_API_KEY` | Key for the selected provider |
-| `PK_INPUT_USD_PER_MILLION` | Current input price for the configured model |
-| `PK_OUTPUT_USD_PER_MILLION` | Current output price for the configured model |
-| `PK_PRICING_DATE` | Price verification date in `YYYY-MM-DD`, no more than 90 days old |
-| `PK_MAX_INPUT_TOKENS` | Conservative input-token bound for the configured model/request |
+| `.plot-and-kin/records.sqlite` | Persistent local research database |
+| `.plot-and-kin/blobs` | Original documents and derived images, addressed by content hash |
+| `.plot-and-kin/imports` | Permitted documents you want the server to import |
+| `.plot-and-kin/exports` | Named dossiers and portable backups |
+| `.plot-and-kin/settings` | Nonsecret preferences and credential references |
+| `.plot-and-kin/runtime/versions` | Replaceable packaged runtime installations |
 
-Add these variables to the server environment in your client configuration. Model IDs and prices are not hardcoded. Verify them in your chosen provider's current documentation before making billable calls. Providers are never switched silently.
+Ask **“Where should I put my document?”** The client can list the import folder and filenames. Place the document there, then ask to import it by name. Chat attachments are usable only when the client explicitly supplies their contents. A file visible in chat is not automatically readable by the local server.
 
-The client conducts the research and reasoning. Server-issued model calls handle document extraction and image interpretation. The selected provider receives the content needed for those requests, while originals remain in the local library. See [evidence and data handling](evidence-and-data.md).
+Export filenames include the case address. Open them from the printed export folder in Finder or File Explorer. If your client cannot open local files, ask to see the dossier directly in chat.
+
+## Connect Astra when you want it
+
+Astra is optional. It stores structured research in your own database. Original files and derived images remain local, so an Astra connection is **not a cloud backup of your document library**.
+
+In a developer checkout, run:
+
+```sh
+node dist/cli.js setup --connect-astra
+```
+
+For a packaged installation, rerun its installer with `--connect-astra` forwarded to setup, or run the installed runtime's setup command. Setup guides you to create a serverless database and requests its endpoint, keyspace, and token. Enter credentials in the masked terminal prompt, never in chat or command arguments.
+
+Only `pk_records` and `pk_passages` are initialized. Unrelated collections remain untouched. The capability check verifies the tested Astra lexical-search configuration, which remains a preview capability.
+
+**Connecting Astra keeps existing cases local.** Restart your clients after configuration, then ask to move a specific case to Astra. Review and explicitly approve the transfer. Plot & Kin preserves and verifies sources, citation anchors, corrections, review history, logs, and processing-budget state before switching that case's location. The original local case remains a read-only archive. There is no automatic synchronization or duplicate active copy.
+
+A failed transfer does not silently switch locations. Follow the saved transfer status to resume or cancel. After an interrupted process, confirm it has stopped before authorizing recovery. An uncertain paid operation remains uncertain after transfer and does not become eligible for automatic retry.
+
+`setup --storage astra` is an explicit change of the installation's default backend. It does not move existing local cases. Use the normal local default plus individual transfers when you want local and transferred cases in the same case list. An unavailable Astra case stays identified as unavailable rather than being recreated locally.
+
+## Optional scan interpretation
+
+Configure this only when you need scans, handwriting, photographs, or map interpretation:
+
+```sh
+node dist/cli.js setup --processing
+```
+
+Setup requires an explicit provider choice. It offers OpenAI GPT-4.1 mini and Anthropic Haiku 4.5 presets, plus custom model settings. The presets carry prices verified on **October 1, 2026**, pinned model identifiers, and conservative token bounds. Presets expire after 90 days. Updating the date without checking prices is not a refresh. See the linked provider references in setup, or supply newly verified custom settings.
+
+Enter the selected provider's API key securely outside chat. macOS uses Keychain. Windows encrypts saved credentials using DPAPI for the current Windows user. Client configuration and research exports do not contain these credentials. Native credential-store acceptance remains part of the platform checklist.
+
+The selected provider receives the page or image content needed for requested interpretation. Research reasoning remains in the client. Providers are never switched silently. Missing keys, invalid settings, or stale prices disable optional interpretation while public-record and text research remain available.
 
 ### Processing budget and recovery
 
-Processing reserves a conservative cost before dispatch against the project's **$10 default cumulative cap**. The cap covers server-issued processing requests. It excludes Codex/Claude client charges, subscriptions, and Astra hosting. The software can record explicitly authorized budget changes.
+Before dispatch, a conservative reservation counts against the project's **$10 default cumulative processing cap**. This covers server-issued processing calls and excludes client subscriptions and database hosting. Completed pages survive interruption. A processing queue shows which pages are complete or need attention.
 
-A request with an unknown billing outcome does not trigger an automatic billable retry:
+Unknown billing outcomes pause rather than automatically issue another paid request. Ask the client to inspect saved processing state first. Verify the actual provider charge before approving reconciliation, and separately approve any new billable attempt. Correct pricing or token-limit incidents before unblocking processing.
 
-- Inspect saved processing state first. `page_process` resumes an already saved result without another model request.
-- If no usable result exists, verify actual provider billing and record it with `budget_reconcile`.
-- A new billable attempt requires separate explicit approval through `page_retry`.
-- Resolve any processing incident and correct its pricing/token limits before using `processing_unblock`.
+A hard exit may leave a reservation marked `reserved`. Stop every server or worker that could still send that request, verify billing, then explicitly attest that dispatch has stopped during reconciliation. The service records the operator statement and cannot independently prove that another process was stopped.
 
-A hard process exit may leave a reservation marked `reserved`. Before reconciling that state, stop every server or worker that could still send the original request, check provider billing, then attest `dispatchStopped: true` in `budget_reconcile` from the restarted server. This is a recorded operator confirmation. The service cannot independently establish that another process was stopped.
+## Export, back up, and restore
 
-## 6. Export, back up, and restore
+A **dossier** is a readable Markdown, HTML, or structured JSON report. A **portable backup** includes the full project's originals, necessary derived images, citations, corrections, decisions, logs, and checksums. Ask for both when preserving a complete research record.
 
-A **dossier** is a reviewable Markdown, static HTML, or structured JSON report. A **backup** is a self-contained, schema-version-1 JSON bundle containing records, originals, necessary derived assets, and SHA-256 hashes. The default serialized bundle limit is 250 MiB. Runtime credentials and absolute machine paths are excluded from record metadata.
+Backups use versioned JSON with a default serialized limit of 250 MiB. Credentials and machine-specific paths are removed from research metadata. Original evidence files retain their actual content, so they are not automatically redacted.
+
+Restore validates references and asset hashes into a fresh destination, never silently overwriting an existing case. An incomplete destination cannot be used for ordinary research. To resume, repeat the same bundle, destination, and operation identifier. CLI users can use:
 
 ```sh
-node dist/cli.js export PROJECT_ID markdown
 node dist/cli.js export PROJECT_ID html
-node dist/cli.js export PROJECT_ID json
 node dist/cli.js backup PROJECT_ID
 node dist/cli.js restore /absolute/path/to/backup.json NEW_PROJECT_ID RESTORE_OPERATION_ID
 ```
 
-Exports are written under the configured library's `exports` directory. Retain both the dossier and backup when sharing a complete research record.
-
-Restoration validates the complete bundle, references, and asset hashes before writing. It requires a fresh destination project and never silently overwrites an existing one. An interrupted destination remains unavailable for research until restoration is ready.
-
-To resume an interrupted restore, repeat the same bundle, destination, and operation identifier. When the CLI operation ID is omitted, it derives a stable ID from the destination and bundle, so repeating the same command resumes the same restore.
+When the CLI operation ID is omitted, a stable identifier is derived from the destination and bundle. Repeating the same command resumes the same restore.
 
 ### Reuse across projects
 
-Explicit reuse copies selected sources, passages, entities, or claims together with their evidence dependencies into another ready project in the same library. It records origin provenance and resets copied claim/entity approvals to proposed. Research is not automatically pooled across projects.
+Explicit reuse copies selected evidence and its dependencies with origin provenance. Copied claims return to proposed status because a conclusion approved for one question is not automatically approved for another. Research is never silently pooled across projects. Repeating an unchanged copy resumes the saved operation instead of creating duplicates.
 
-Repeated copies of an unchanged selection use deterministic operation and record IDs. An interrupted copy resumes with dependency checks and retained progress instead of creating duplicates. Changing the source snapshots creates a new default operation. An explicitly reused operation ID rejects different inputs. Processing jobs are not copied as evidence, but their origin is retained on copied passages.
+## Setup and recovery
+
+| What you see | What to do |
+| --- | --- |
+| The plugin is connected but research needs setup | Rerun setup, then restart the client. Welcome and setup status stay available. |
+| The client cannot find the server | Confirm the installed runtime or developer checkout still exists, then rerun setup for that client. |
+| Optional credentials are locked or missing | Unlock the OS credential store or rerun the relevant guided setup. Local text research remains available. |
+| Astra is unavailable | Check the saved connection. Do not create a replacement local copy of the remote case. |
+| Another setup owns a settings lock | Close the other setup. Remove a leftover lock only after confirming no setup process is running. |
+| An export link does not open | Use Finder or File Explorer at the printed export folder, or ask for the dossier in chat. |
+
+For developer diagnostics, run `node dist/cli.js doctor`. The `serve` command reserves stdin/stdout for MCP messages. Do not type ordinary chat text into its terminal.
+
+Advanced environment overrides are listed in [.env.example](../.env.example). The application does **not** automatically load `.env`. Explicit environment values override saved settings. Existing explicitly supplied Astra credentials preserve their legacy storage intent when no storage mode is set. `PK_STORAGE=astra` never silently falls back on a failed connection. `PK_STORAGE=memory` is temporary and is intended for demos or tests.
 
 ## Development and validation
 
@@ -195,8 +188,10 @@ npm run build
 npm run test:cli
 ```
 
-[Validation results](validation.md) record automated and live checks, plus outstanding acceptance work. [Source coverage](source-coverage.md) distinguishes compiled leads, archival evidence, fixture provenance, and known gaps.
+On a supported native release target, also run `npm run release:package` and `npm run test:installer`. These build and test the installed artifact, including native document extraction and rendering. They do not complete desktop application acceptance.
 
-[Pilot materials](pilot.md) contain an unsent recruitment draft and a counterbalanced measurement protocol for five professional researchers. The provisional target is at least 25% median reduction in total research effort, including verification and corrections, with no critical evidence errors in reviewed dossiers. This is a target, not a measured result.
+[Validation](validation.md) separates automated, live-service, installed-artifact, desktop, and pilot evidence. [Client acceptance](client-acceptance.md) records the actual-client release gates. [Source coverage](source-coverage.md) documents sources, rights, and limits.
 
-The software uses the [Apache License 2.0](../LICENSE). Archival materials retain their own rights and attribution requirements.
+[Pilot materials](pilot.md) contain an unsent recruitment draft and evaluation protocol for five professional researchers. The provisional target is at least 25% median reduction in total research effort, with no critical evidence errors in reviewed dossiers. This remains a target, not a measured result.
+
+[Apache License 2.0](../LICENSE). Archival materials retain their own rights and attribution requirements.

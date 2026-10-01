@@ -34,6 +34,8 @@
     "test": "vitest run",
     "test:coverage": "vitest run --coverage",
     "test:cli": "node --test tests/cli.test.mjs",
+    "test:installer": "node --test tests/installer.test.mjs",
+    "release:package": "node scripts/package-release.mjs",
     "docs:example": "npm run build && node scripts/generate-docs-example.mjs",
     "check": "npm run typecheck && npm test",
     "start": "node dist/cli.js serve",
@@ -46,6 +48,7 @@
     "htmlparser2": "12.0.0",
     "pdfjs-dist": "6.3.289",
     "sharp": "0.35.5",
+    "smol-toml": "1.9.0",
     "undici": "8.11.2",
     "zod": "4.6.5"
   },

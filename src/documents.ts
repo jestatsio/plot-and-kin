@@ -1,4 +1,3 @@
-import sharp from 'sharp';
 import { Parser } from 'htmlparser2';
 import { PKError } from './types.js';
 import { MAX_SOURCE_BYTES } from './library.js';
@@ -72,6 +71,7 @@ export class DocumentProcessor {
     if (format === 'pdf') { const doc = await loadPdf(bytes); try { return {format,pageCount:doc.numPages}; } finally { await doc.destroy(); } }
     if (format === 'image') {
       try {
+        const { default: sharp } = await import('sharp');
         const m = await sharp(bytes,{limitInputPixels:MAX_PIXELS,failOn:'warning'}).metadata();
         if (!m.width || !m.height || m.pages && m.pages > 1) throw new Error('multipage image');
         return {format,pageCount:1,width:m.width,height:m.height};
@@ -110,6 +110,7 @@ export class DocumentProcessor {
       if (width < 1 || height < 1 || width*height > MAX_PIXELS) throw new PKError('DOCUMENT_LIMIT','Rendered image exceeds pixel limits');
       if (![c.x,c.y,c.width,c.height].every(Number.isInteger)) throw new PKError('INVALID_CROP','Image crops use integer pixel coordinates');
       try {
+        const { default: sharp } = await import('sharp');
         const rendered = await sharp(bytes,{limitInputPixels:MAX_PIXELS,failOn:'warning'}).extract({left:c.x,top:c.y,width:c.width,height:c.height}).resize(width,height).png().toBuffer();
         return {bytes:rendered,mimeType:'image/png',width,height,transform:{scale,offsetX:c.x,offsetY:c.y,originalWidth:info.width!,originalHeight:info.height!,units:'pixels'}};
       } catch { throw new PKError('INVALID_DOCUMENT','Image could not be decoded'); }
