@@ -73,11 +73,12 @@ jobs:
           merge-multiple: true
       - name: Assemble offline Codex marketplace
         run: node scripts/assemble-codex-marketplace.mjs artifacts/release artifacts/codex-marketplace
+      - name: Preserve launcher permissions in the marketplace artifact
+        run: tar -czf artifacts/codex-marketplace.tar.gz -C artifacts/codex-marketplace .
       - uses: actions/upload-artifact@v4
         with:
           name: codex-marketplace
-          path: artifacts/codex-marketplace/
-          include-hidden-files: true
+          path: artifacts/codex-marketplace.tar.gz
           if-no-files-found: error
   publish:
     if: github.event_name == 'workflow_dispatch' && inputs.publish
