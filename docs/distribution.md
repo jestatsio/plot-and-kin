@@ -43,9 +43,9 @@ In **Plugins**, choose the **Plot & Kin** marketplace and install only the entry
 | Mac with Intel processor | Plot & Kin · Mac · Intel | `plot-and-kin-darwin-x64` |
 | Windows x64 | Plot & Kin · Windows · x64 | `plot-and-kin-win32-x64` |
 
-The runtime is included in the catalog package. First launch verifies its checksum and extracts it locally. It does not download a runtime or run guided setup. Start a new chat and ask **“Help me get started with Plot & Kin.”** No Node.js installation or optional service credentials are needed.
+The runtime is included in the catalog package. On Macs, first launch verifies and extracts the bundled archive. Windows launches its included Node executable directly. Neither path downloads a runtime or runs guided setup. Start a new chat and ask **“Help me get started with Plot & Kin.”** No Node.js installation or optional service credentials are needed.
 
-Refresh the marketplace and install the offered plugin update when a new release is published, then reopen the client. Saved cases and settings remain outside the plugin cache. This custom catalog is maintained by JEStats and is separate from an official OpenAI directory listing.
+Every platform package is checksum-verified when the catalog is built. Refresh the marketplace and install the offered plugin update when a new release is published, then reopen the client. Saved cases and settings remain outside the plugin cache. This custom catalog is maintained by JEStats and is separate from an official OpenAI directory listing.
 
 ## Codex offline marketplace
 

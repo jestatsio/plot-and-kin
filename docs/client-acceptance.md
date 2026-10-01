@@ -22,7 +22,7 @@ On October 1, 2026, local macOS Apple Silicon validation passed:
 
 - Official MCPB schema validation, packaging, and extraction. The emitted extension created a first case without API keys or system Node, then retained it and the existing settings after replacement of its installation directory.
 - Both Codex package forms installed through the real pinned Codex 0.159.3 CLI in isolated profiles. Its app server discovered the research skill and MCP tools, created a synthetic case, restarted, and recovered the case. No model conversation or user-account credentials were needed for this test.
-- Concurrent offline runtime extraction, checksum failure rejection, Unicode paths and evidence, and persistent records after replacement of the plugin cache.
+- Concurrent offline startup, checksum failure rejection, Unicode paths and evidence, and persistent records after replacement of the plugin cache. Mac catalogs extract their bundled archive at first launch. Windows catalogs contain the runtime ready to execute.
 - Complete release validation rejects missing extension assets, damaged packages, and a mismatched version before publication.
 
 The actual Codex loader test caught and fixed a portable-manifest executable-path incompatibility that simulated MCP launches did not detect. `npm run test:codex-client` now runs against each native package in release CI. This is real client-loader acceptance, **not** desktop UI or conversational acceptance. Claude Desktop's installation controls were inspected on this Mac, but its extension installation still requires an explicit operator decision.

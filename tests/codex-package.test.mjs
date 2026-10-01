@@ -19,6 +19,49 @@ const supported = ['darwin-arm64', 'darwin-x64', 'win32-x64'];
 const testPackaged = process.env.PK_TEST_PACKAGED_DISTRIBUTION === '1' && supported.includes(platform);
 const clientProcesses = new WeakMap();
 
+// Tiny stored ZIPs keep catalog validation deterministic without a runtime or
+// platform ZIP writer. Overrides exercise metadata checks before extraction.
+function fixtureZip(entries) {
+  const local = []; const central = []; let offset = 0;
+  for (const { name, text = '', mode = 0x81a4, size } of entries) {
+    const filename = Buffer.from(name); const data = Buffer.from(text);
+    let crc = 0xffffffff;
+    for (const byte of data) { crc ^= byte; for (let bit = 0; bit < 8; bit++) crc = (crc >>> 1) ^ (crc & 1 ? 0xedb88320 : 0); }
+    crc = (crc ^ 0xffffffff) >>> 0;
+    const header = Buffer.alloc(30);
+    header.writeUInt32LE(0x04034b50); header.writeUInt16LE(20, 4); header.writeUInt16LE(0x800, 6);
+    header.writeUInt32LE(crc, 14); header.writeUInt32LE(data.length, 18); header.writeUInt32LE(size ?? data.length, 22); header.writeUInt16LE(filename.length, 26);
+    local.push(header, filename, data);
+    const directory = Buffer.alloc(46);
+    directory.writeUInt32LE(0x02014b50); directory.writeUInt16LE(0x314, 4); directory.writeUInt16LE(20, 6); directory.writeUInt16LE(0x800, 8);
+    directory.writeUInt32LE(crc, 16); directory.writeUInt32LE(data.length, 20); directory.writeUInt32LE(size ?? data.length, 24); directory.writeUInt16LE(filename.length, 28);
+    directory.writeUInt32LE((mode << 16) >>> 0, 38); directory.writeUInt32LE(offset, 42);
+    central.push(directory, filename); offset += header.length + filename.length + data.length;
+  }
+  const directory = Buffer.concat(central); const end = Buffer.alloc(22);
+  end.writeUInt32LE(0x06054b50); end.writeUInt16LE(entries.length, 8); end.writeUInt16LE(entries.length, 10);
+  end.writeUInt32LE(directory.length, 12); end.writeUInt32LE(offset, 16);
+  return Buffer.concat([...local, directory, end]);
+}
+
+function windowsFixtureEntries(releaseVersion = version) {
+  const files = {
+    'release.json': JSON.stringify({ schemaVersion: 1, version: releaseVersion, platform: 'win32-x64' }),
+    'bin/node.exe': 'synthetic runtime', 'dist/cli.js': '// fixture',
+    'skills/research-property/SKILL.md': '# Fixture', 'plugin.json': '{}', 'mcp.json': '{}',
+    '.codex-plugin/plugin.json': '{}', 'assets/icon.png': 'synthetic icon', LICENSE: 'fixture license',
+    'package.json': '{}', 'package-lock.json': '{}', 'node_modules/fixture/index.js': '// fixture',
+  };
+  return Object.entries(files).map(([name, text]) => ({ name: `plot-and-kin-codex/plugins/plot-and-kin/${name}`, text }));
+}
+
+async function saveArchive(assets, target, bytes) {
+  const name = `plot-and-kin-${version}-${target}-codex.zip`;
+  await writeFile(join(assets, name), bytes);
+  const hash = createHash('sha256').update(bytes).digest('hex');
+  await writeFile(join(assets, `${name}.sha256`), `${hash}  ${name}\n`);
+}
+
 test('native manifests are portable, stable, and do not require a system runtime', () => {
   for (const target of supported) {
     const first = codexManifests({ version: '1.0.0', platform: target });
@@ -51,22 +94,18 @@ async function launchParameters(plugin, data) {
   // No development Node/npm/Python on PATH, no inherited provider credentials,
   // and no access to the researcher's saved settings or library.
   const env = Object.fromEntries(Object.entries(process.env).filter(([key]) => /^(SystemRoot|WINDIR|TEMP|TMP|TMPDIR)$/i.test(key)));
-  const windowsShell = config.command === 'powershell.exe';
-  const systemRoot = Object.entries(env).find(([key]) => /^SystemRoot$/i.test(key))?.[1];
-  const systemPath = windowsShell ? join(systemRoot, 'System32', 'WindowsPowerShell', 'v1.0') : '';
   return {
     command: resolveCommand(config.command, plugin), args: config.args.map(expand),
-    cwd: data, env: { ...env, PATH: systemPath, ...(windowsShell ? { PSModulePath: 'C:\\missing-powershell-7-modules' } : {}), PK_STORAGE: 'local', PK_LIBRARY_DIR: data, PK_SETTINGS_DIR: join(data, 'settings') },
+    cwd: data, env: { ...env, PATH: '', PK_STORAGE: 'local', PK_LIBRARY_DIR: data, PK_SETTINGS_DIR: join(data, 'settings') },
     stderr: 'pipe',
   };
 }
 
 async function connect(plugin, data) {
   const params = await launchParameters(plugin, data);
-  const windowsShell = params.command === 'powershell.exe';
   const transport = new StdioClientTransport(params);
   const client = new Client({ name: 'codex-package-acceptance', version: '1.0.0' });
-  const owned = { transport, windowsShell, stderr: '' };
+  const owned = { stderr: '' };
   clientProcesses.set(client, owned);
   transport.stderr?.on('data', bytes => { owned.stderr = (owned.stderr + bytes.toString('utf8')).slice(-16_384); });
   try { await client.connect(transport); }
@@ -79,7 +118,7 @@ async function connect(plugin, data) {
   return client;
 }
 
-async function verifyWindowsLauncherEof(plugin, data) {
+async function verifyServerEof(plugin, data) {
   const params = await launchParameters(plugin, data);
   const child = spawn(params.command, params.args, { cwd: params.cwd, env: params.env, windowsHide: true, stdio: ['pipe', 'pipe', 'pipe'] });
   let stderr = '';
@@ -108,7 +147,7 @@ async function verifyWindowsLauncherEof(plugin, data) {
     assert.ok((await deadline(initialized, 'MCP initialize timed out')).result?.serverInfo);
     child.stdin.end();
     // No SDK timeout or force-kill here. Exit zero proves that EOF reached Node
-    // and the launcher waited for it instead of leaving its child behind.
+    // without depending on the SDK's forced shutdown behavior.
     assert.deepEqual(await deadline(exited, 'Launcher did not exit after client EOF'), { code: 0, signal: null });
   } catch (error) {
     primaryError = error;
@@ -118,8 +157,10 @@ async function verifyWindowsLauncherEof(plugin, data) {
     lines.close();
     let cleanupError;
     if (!exitResult && child.pid) {
-      const result = spawnSync(join(process.env.SystemRoot ?? process.env.SYSTEMROOT, 'System32', 'taskkill.exe'), ['/PID', String(child.pid), '/T', '/F'], { encoding: 'utf8', windowsHide: true, timeout: 15_000 });
-      if (result.error || (result.status !== 0 && result.status !== 128)) cleanupError = new Error(`Owned EOF-test process cleanup failed (${result.status}): ${result.error?.message ?? result.stderr}`);
+      if (process.platform === 'win32') {
+        const result = spawnSync(join(process.env.SystemRoot ?? process.env.SYSTEMROOT, 'System32', 'taskkill.exe'), ['/PID', String(child.pid), '/T', '/F'], { encoding: 'utf8', windowsHide: true, timeout: 15_000 });
+        if (result.error || (result.status !== 0 && result.status !== 128)) cleanupError = new Error(`Owned EOF-test process cleanup failed (${result.status}): ${result.error?.message ?? result.stderr}`);
+      } else child.kill('SIGKILL');
     }
     child.stdin.destroy(); child.stdout.destroy(); child.stderr.destroy();
     if (cleanupError && primaryError) primaryError.stack += `\n${cleanupError.stack}`;
@@ -129,26 +170,8 @@ async function verifyWindowsLauncherEof(plugin, data) {
 
 async function closeClient(client) {
   if (!client) return;
-  const owned = clientProcesses.get(client);
-  const failures = [];
-  // SDK close() terminates only its immediate child. Windows has no exec(), so
-  // the Git launcher has a Node descendant that must be included in test-owned
-  // process teardown. Never target unrelated processes by executable name.
-  try {
-    if (owned?.windowsShell && owned.transport.pid) {
-      const taskkill = join(process.env.SystemRoot ?? process.env.SYSTEMROOT, 'System32', 'taskkill.exe');
-      const result = spawnSync(taskkill, ['/PID', String(owned.transport.pid), '/T', '/F'], { encoding: 'utf8', windowsHide: true, timeout: 15_000 });
-      if (result.error) throw new Error(`Owned launcher process cleanup failed: ${result.error.message}`);
-      // taskkill returns 128 when the process completed before the request.
-      if (result.status !== 0 && result.status !== 128) throw new Error(`Owned launcher process cleanup failed (${result.status}): ${result.stderr}`);
-    }
-  } catch (error) { failures.push(error); }
-  finally {
-    try { await client.close(); }
-    catch (error) { failures.push(error); }
-    clientProcesses.delete(client);
-  }
-  if (failures.length) throw new AggregateError(failures, 'Owned MCP process cleanup failed');
+  try { await client.close(); }
+  finally { clientProcesses.delete(client); }
 }
 
 function resolveCommand(command, plugin) {
@@ -232,11 +255,8 @@ test('Git catalog embeds verified offline payloads with explicit platform choice
     const assets = join(work, 'assets');
     await mkdir(assets);
     for (const target of supported) {
-      const name = `plot-and-kin-${version}-${target}-codex.zip`;
-      const bytes = Buffer.from(`Synthetic packaging fixture for ${target}`);
-      await writeFile(join(assets, name), bytes);
-      const hash = createHash('sha256').update(bytes).digest('hex');
-      await writeFile(join(assets, `${name}.sha256`), `${hash}  ${name}\n`);
+      const bytes = target === 'win32-x64' ? fixtureZip(windowsFixtureEntries()) : Buffer.from(`Synthetic packaging fixture for ${target}`);
+      await saveArchive(assets, target, bytes);
     }
     const output = join(work, 'catalog');
     const catalog = await assembleCodexMarketplace({ assets, output, version });
@@ -248,11 +268,17 @@ test('Git catalog embeds verified offline payloads with explicit platform choice
       assert.equal(entry.name, manifest.name);
       assert.equal(manifest.version, version);
       const config = JSON.parse(await readFile(join(plugin, 'mcp.json'), 'utf8')).mcpServers['plot-and-kin'];
-      assert.equal(config.command, target === 'win32-x64' ? 'powershell.exe' : './scripts/launch.sh');
-      const launcher = await readFile(join(plugin, 'scripts', target === 'win32-x64' ? 'launch.ps1' : 'launch.sh'), 'utf8');
-      const payload = await readFile(join(plugin, 'runtime.zip'));
-      assert.ok(launcher.includes(createHash('sha256').update(payload).digest('hex')));
-      assert.ok(!launcher.includes('__PK_'));
+      assert.equal(config.command, target === 'win32-x64' ? './bin/node.exe' : './scripts/launch.sh');
+      if (target === 'win32-x64') {
+        assert.equal(await readFile(join(plugin, 'bin/node.exe'), 'utf8'), 'synthetic runtime');
+        assert.deepEqual(config.args, ['--disable-warning=ExperimentalWarning', '${PLUGIN_ROOT}/dist/cli.js', 'serve']);
+        await assert.rejects(readFile(join(plugin, 'runtime.zip')), { code: 'ENOENT' });
+      } else {
+        const launcher = await readFile(join(plugin, 'scripts/launch.sh'), 'utf8');
+        const payload = await readFile(join(plugin, 'runtime.zip'));
+        assert.ok(launcher.includes(createHash('sha256').update(payload).digest('hex')));
+        assert.ok(!launcher.includes('__PK_'));
+      }
     }
     await assert.rejects(assembleCodexMarketplace({ assets, output, version }), /must be empty/);
     const damaged = join(assets, `plot-and-kin-${version}-darwin-arm64-codex.zip`);
@@ -261,7 +287,34 @@ test('Git catalog embeds verified offline payloads with explicit platform choice
   } finally { await rm(work, { recursive: true, force: true }); }
 });
 
-test('offline Git marketplace extracts once under concurrent launch and rejects a modified payload', { skip: !testPackaged, timeout: process.platform === 'win32' ? 900_000 : 300_000 }, async t => {
+test('Windows catalog validates verified ZIP paths, file types, size, and native release identity before publication', async () => {
+  const work = await mkdtemp(join(tmpdir(), 'pk-codex-win-validation-'));
+  try {
+    const assets = join(work, 'assets'); await mkdir(assets);
+    const assemble = output => assembleCodexMarketplace({ assets, output, version, targets: ['win32-x64'] });
+    // Legacy .NET ZIP entry separators must work on every publishing host.
+    await saveArchive(assets, 'win32-x64', fixtureZip(windowsFixtureEntries().map(entry => ({ ...entry, name: entry.name.replaceAll('/', '\\') }))));
+    await assemble(join(work, 'valid'));
+    const invalid = [
+      [windowsFixtureEntries('99.0.0'), /metadata mismatch/],
+      [[...windowsFixtureEntries(), { name: 'plot-and-kin-codex/../escaped', text: 'unsafe' }], /Unsafe/],
+      [[...windowsFixtureEntries(), { name: 'plot-and-kin-codex/link', text: '../../outside', mode: 0xa1ff }], /link or special/],
+      [[...windowsFixtureEntries(), { name: 'plot-and-kin-codex/large', size: 100 * 1024 * 1024 }], /oversized/],
+      [windowsFixtureEntries().filter(entry => !entry.name.endsWith('bin/node.exe')), /ENOENT/],
+    ];
+    for (const [index, [entries, error]] of invalid.entries()) {
+      await saveArchive(assets, 'win32-x64', fixtureZip(entries));
+      const output = join(work, `invalid-${index}`);
+      await assert.rejects(assemble(output), error);
+      await assert.rejects(readFile(join(output, '.agents/plugins/marketplace.json')), { code: 'ENOENT' });
+    }
+    await saveArchive(assets, 'win32-x64', fixtureZip(windowsFixtureEntries()));
+    await writeFile(join(assets, `plot-and-kin-${version}-win32-x64-codex.zip`), 'damaged');
+    await assert.rejects(assemble(join(work, 'damaged')), /checksum mismatch/);
+  } finally { await rm(work, { recursive: true, force: true }); }
+});
+
+test('offline Git marketplace starts concurrently, preserves Unicode, and exits on client EOF', { skip: !testPackaged, timeout: process.platform === 'win32' ? 900_000 : 300_000 }, async t => {
   const work = await mkdtemp(join(tmpdir(), 'pk-codex-offline-é space-'));
   const clients = [];
   let phase = 'assemble offline catalog';
@@ -273,8 +326,8 @@ test('offline Git marketplace extracts once under concurrent launch and rejects 
     const firstData = join(work, 'case-one');
     const secondData = join(work, 'case-two');
     await Promise.all([mkdir(firstData), mkdir(secondData)]);
-    // Both clients cold-start the same plugin. Extraction must publish exactly
-    // one complete runtime and leave the MCP stdout stream unpolluted.
+    // Both clients cold-start the same plugin. Mac extraction must publish one
+    // complete runtime. Every platform must keep the MCP stream unpolluted.
     phase = 'concurrent cold MCP connections';
     const connected = await Promise.allSettled([connect(plugin, firstData), connect(plugin, secondData)]);
     for (const result of connected) if (result.status === 'fulfilled') clients.push(result.value);
@@ -288,20 +341,21 @@ test('offline Git marketplace extracts once under concurrent launch and rejects 
     phase = 'owned process-tree shutdown';
     await Promise.all(clients.map(client => closeClient(client)));
     clients.length = 0;
-    if (process.platform === 'win32') {
-      phase = 'normal Windows launcher EOF shutdown';
-      await verifyWindowsLauncherEof(plugin, firstData);
+    phase = 'normal server EOF shutdown';
+    await verifyServerEof(plugin, firstData);
+    // Mac launchers verify compressed bytes even after caching. Windows runs
+    // the direct native package verified during catalog assembly.
+    if (process.platform !== 'win32') {
+      phase = 'tampered archive rejection';
+      await writeFile(join(plugin, 'runtime.zip'), 'Modified archive');
+      const config = JSON.parse(await readFile(join(plugin, 'mcp.json'), 'utf8')).mcpServers['plot-and-kin'];
+      let failed;
+      try {
+        execFileSync(resolveCommand(config.command, plugin), config.args.map(value => value.replaceAll('${PLUGIN_ROOT}', plugin)), { encoding: 'utf8', timeout: 10_000, env: process.env });
+      } catch (error) { failed = error; }
+      assert.ok(failed);
+      assert.match(String(failed.stderr), /checksum failed/);
     }
-    // Every launch checks the shipped bytes even after a runtime was cached.
-    phase = 'tampered archive rejection';
-    await writeFile(join(plugin, 'runtime.zip'), 'Modified archive');
-    const config = JSON.parse(await readFile(join(plugin, 'mcp.json'), 'utf8')).mcpServers['plot-and-kin'];
-    let failed;
-    try {
-      execFileSync(resolveCommand(config.command, plugin), config.args.map(value => value.replaceAll('${PLUGIN_ROOT}', plugin)), { encoding: 'utf8', timeout: 10_000, env: process.env });
-    } catch (error) { failed = error; }
-    assert.ok(failed);
-    assert.match(String(failed.stderr), /checksum failed/);
   } catch (error) {
     primaryError = error;
     t.diagnostic(`Offline launcher failed during ${phase}: ${error.stack ?? error}`);

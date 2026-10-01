@@ -40,9 +40,6 @@ jobs:
         with:
           node-version: '22.23.2'
           cache: npm
-      - name: Verify Windows launcher streams
-        if: runner.os == 'Windows'
-        run: node --test tests/windows-launcher.test.mjs
       - run: npm ci
       - run: npm run typecheck
       - run: npm test
