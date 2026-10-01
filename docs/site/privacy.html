@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#192b2a">
+  <meta name="description" content="Where Plot & Kin saves your research and when information is sent to your chosen services.">
+  <title>Privacy &amp; data — Plot &amp; Kin</title>
+  <link rel="canonical" href="https://jestatsio.github.io/plot-and-kin/privacy.html">
+  <link rel="icon" href="favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <a class="skip-link" href="#main">Skip to content</a>
+  <header class="site-header">
+    <a class="brand" href="index.html" aria-label="Plot and Kin home"><span class="brand-mark" aria-hidden="true">p<span>k</span></span><span>Plot <i>&amp;</i> Kin</span></a>
+    <nav class="primary-nav" aria-label="Main navigation"><a href="index.html#quickstart">Get started</a><a href="https://github.com/jestatsio/plot-and-kin">GitHub ↗</a></nav>
+  </header>
+  <main id="main" class="page-width">
+    <article class="doc-section" style="max-width:48rem;margin:4rem auto">
+      <p class="eyebrow">PRIVACY &amp; DATA · OCTOBER 1, 2026</p>
+      <h1>Your research.<br><em>Your chosen services.</em></h1>
+      <p class="section-lead">Plot &amp; Kin runs on your computer. JEStats does not operate a hosted research service for this prototype. The server has no product analytics, telemetry, or automatic research upload to JEStats.</p>
+      <p>This notice covers the open-source local server and distributed client packages, version 0.1.0.</p>
+      <h2>What stays with you</h2>
+      <p>Cases, passages, findings, review decisions, logs, and processing state are saved in a local SQLite database by default. Original documents, page images, imports, and dossiers live in your local library. The default location is <code>.plot-and-kin</code> in your home directory. Your configured location can differ. Updating or uninstalling an extension preserves these files.</p>
+      <h2>When information leaves your computer</h2>
+      <ul>
+        <li><strong>Your chat client.</strong> Codex or Claude receives the tool results and document content requested in your conversation. Its privacy settings and retention policies apply. Local storage does not make your conversation offline or private from your client provider.</li>
+        <li><strong>Public sources.</strong> DC searches send terms or map extents to the selected public service. Fetching a supplied public document URL contacts that site. These services receive ordinary connection information, including your IP address.</li>
+        <li><strong>Optional Astra.</strong> Explicitly transferred cases, or an explicitly selected Astra default, store structured research in your database. Original bytes stay local. Astra does not back up your document library.</li>
+        <li><strong>Optional OpenAI or Anthropic processing.</strong> Requested interpretation sends the relevant page, image, and instructions to your chosen provider. Its terms and policies apply. Providers never switch automatically.</li>
+        <li><strong>Installation and updates.</strong> Packages download from GitHub and its delivery services. Marketplace hosts may check for updates under their own settings. The server does not send research to the package download host.</li>
+      </ul>
+      <h2>Credentials and control</h2>
+      <p>The default local, public-record, and text-document workflow needs no database or model API credentials. Guided setup protects optional saved credentials with macOS Keychain or Windows DPAPI. Credentials are excluded from research exports and client registration files.</p>
+      <p>You choose what to import and which optional services to use. Only import material you are permitted to possess, process, and share. Dossiers and backups preserve original evidence content and are <strong>not automatically redacted</strong>. Review them before sharing.</p>
+      <p>The server does not automatically delete saved research. Make portable backups before removing your library folder. Manage copies held by your chat client or optional cloud services through those services. Deleting local files does not remove third-party copies.</p>
+      <h2>Questions</h2>
+      <p>Use <a href="https://github.com/jestatsio/plot-and-kin/issues">GitHub issues</a> for product questions. Issues are public. Do not post credentials, private addresses, confidential documents, or sensitive research. This notice describes our software's data flows, not third-party policies.</p>
+      <p><a class="text-link" href="index.html#quickstart">Return to the field guide →</a></p>
+    </article>
+  </main>
+</body>
+</html>

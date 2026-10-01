@@ -6,12 +6,18 @@ on:
         description: Publish tested assets (only from a matching vVERSION tag)
         type: boolean
         default: false
+      draft:
+        description: Keep uploaded release assets in a draft for desktop acceptance
+        type: boolean
+        default: true
   pull_request:
     paths:
       - 'src/**'
       - 'scripts/**'
       - 'tests/**'
       - 'package*.json'
+      - 'extension/**'
+      - 'distribution/**'
       - '.github/workflows/release.yml'
 permissions:
   contents: read
@@ -42,15 +48,40 @@ jobs:
       - run: npm run build
       - run: npm run test:cli
       - run: npm run release:package
+      - run: npm run test:distribution
+        env:
+          PK_TEST_PACKAGED_DISTRIBUTION: '1'
       - run: npm run test:installer
+      - run: npm run test:codex-client
       - uses: actions/upload-artifact@v4
         with:
           name: release-${{ matrix.platform }}
           path: artifacts/release/*
           if-no-files-found: error
+  catalog:
+    needs: package
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22.23.2'
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: release-*
+          path: artifacts/release
+          merge-multiple: true
+      - name: Assemble offline Codex marketplace
+        run: node scripts/assemble-codex-marketplace.mjs artifacts/release artifacts/codex-marketplace
+      - uses: actions/upload-artifact@v4
+        with:
+          name: codex-marketplace
+          path: artifacts/codex-marketplace/
+          include-hidden-files: true
+          if-no-files-found: error
   publish:
     if: github.event_name == 'workflow_dispatch' && inputs.publish
-    needs: package
+    needs: [package, catalog]
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -69,3 +100,4 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           PK_RELEASE_REF: ${{ github.ref }}
+          PK_RELEASE_DRAFT: ${{ inputs.draft && '1' || '0' }}

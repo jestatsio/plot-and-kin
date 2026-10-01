@@ -4,11 +4,22 @@
 
 Start with an address and a question. Plot & Kin saves cases on your computer by default, so public building records, text documents, evidence review, and dossiers need no Astra account or separate model API key. Codex or Claude Desktop supplies the research conversation. The client's own account and charges are separate.
 
-[Project overview](../README.md) · [Documentation site](https://jestatsio.github.io/plot-and-kin/) · [Evidence and data](evidence-and-data.md) · [Validation](validation.md)
+[Project overview](../README.md) · [Documentation site](https://jestatsio.github.io/plot-and-kin/) · [Evidence and data](evidence-and-data.md) · [Privacy](privacy.md) · [Validation](validation.md)
 
 ## Install and connect
 
-**Release status:** the macOS and Windows installer implementation is available in this repository. A packaged researcher release has not been published yet. The actual desktop-client acceptance checklist remains open. The release commands below are documented for publication and are not available installation paths today.
+**Release status:** Claude Desktop extensions, Codex marketplace packages, and macOS/Windows installers are being validated. A packaged researcher release and the Git marketplace catalog have not been published yet. The actual desktop-client acceptance checklist remains open. The release paths below describe installation after publication.
+
+### Client packages: no terminal for your first case
+
+After publication, choose a package for **Mac Apple Silicon**, **Mac Intel**, or **Windows x64**:
+
+- **Claude Desktop:** download the matching `.mcpb`, then use **Settings → Extensions → Advanced settings → Install extension**.
+- **Codex:** add the custom Plot & Kin marketplace, then install the entry matching your computer. A downloaded marketplace ZIP also supports local installation.
+
+Both packages include their runtime and start with persistent local storage. No Node.js installation, database account, model API key, or guided setup is needed for your first local case. Start a new chat and ask **“Help me get started with Plot & Kin.”** Your client's account and public-source network access are still required.
+
+Use [client packages and marketplace installation](distribution.md) for exact files and commands once available. A custom marketplace is separate from an approved public-directory listing. If you already connected this client through guided setup, follow the migration steps there to avoid duplicate tools.
 
 ### Available now: developer checkout
 
@@ -44,7 +55,7 @@ curl -fsSL https://github.com/jestatsio/plot-and-kin/releases/latest/download/in
 & ([scriptblock]::Create((Invoke-RestMethod 'https://github.com/jestatsio/plot-and-kin/releases/latest/download/install.ps1')))
 ```
 
-Only use these commands after the [Releases page](https://github.com/jestatsio/plot-and-kin/releases) contains an accepted release for your platform. Windows ARM64 is not a validated target. macOS is the priority, with Windows developed and tested alongside it. Public Codex plugin-directory distribution is a separate future gate, not a prerequisite for this local setup.
+Only use these commands after the [Releases page](https://github.com/jestatsio/plot-and-kin/releases) contains an accepted release for your platform. This guided path is an alternative to installing a client package. Windows ARM64 is not a validated target. macOS is the priority, with Windows developed and tested alongside it. Public-directory distribution is a separate gate, not a prerequisite for local setup.
 
 Rerun the installer to update or repair configuration. Versioned runtime directories are separate from research and settings. Setup does not remove old runtimes, cases, or the library. If the download or health check fails, it reports the problem before activating that runtime.
 
@@ -109,10 +120,10 @@ Astra is optional. It stores structured research in your own database. Original 
 In a developer checkout, run:
 
 ```sh
-node dist/cli.js setup --connect-astra
+node dist/cli.js setup --client none --connect-astra
 ```
 
-For a packaged installation, rerun its installer with `--connect-astra` forwarded to setup, or run the installed runtime's setup command. Setup guides you to create a serverless database and requests its endpoint, keyspace, and token. Enter credentials in the masked terminal prompt, never in chat or command arguments.
+For a packaged installation, use the bundled runtime's setup command with **`--client none --connect-astra`**. The [package guide](distribution.md#optional-astra-and-scan-processing) explains how to run it without a separate Node installation. `--client none` preserves the existing extension/plugin connection and avoids adding a second server registration. Setup guides you to create a serverless database and requests its endpoint, keyspace, and token. Enter credentials in the masked terminal prompt, never in chat or command arguments.
 
 Only `pk_records` and `pk_passages` are initialized. Unrelated collections remain untouched. The capability check verifies the tested Astra lexical-search configuration, which remains a preview capability.
 
@@ -127,10 +138,10 @@ A failed transfer does not silently switch locations. Follow the saved transfer 
 Configure this only when you need scans, handwriting, photographs, or map interpretation:
 
 ```sh
-node dist/cli.js setup --processing
+node dist/cli.js setup --client none --processing
 ```
 
-Setup requires an explicit provider choice. It offers OpenAI GPT-4.1 mini and Anthropic Haiku 4.5 presets, plus custom model settings. The presets carry prices verified on **October 1, 2026**, pinned model identifiers, and conservative token bounds. Presets expire after 90 days. Updating the date without checking prices is not a refresh. See the linked provider references in setup, or supply newly verified custom settings.
+For a client package, use its bundled runtime as described in [optional setup](distribution.md#optional-astra-and-scan-processing), keeping `--client none`. Setup requires an explicit provider choice. It offers OpenAI GPT-4.1 mini and Anthropic Haiku 4.5 presets, plus custom model settings. The presets carry prices verified on **October 1, 2026**, pinned model identifiers, and conservative token bounds. Presets expire after 90 days. Updating the date without checking prices is not a refresh. See the linked provider references in setup, or supply newly verified custom settings.
 
 Enter the selected provider's API key securely outside chat. macOS uses Keychain. Windows encrypts saved credentials using DPAPI for the current Windows user. Client configuration and research exports do not contain these credentials. Native credential-store acceptance remains part of the platform checklist.
 
@@ -168,8 +179,8 @@ Explicit reuse copies selected evidence and its dependencies with origin provena
 
 | What you see | What to do |
 | --- | --- |
-| The plugin is connected but research needs setup | Rerun setup, then restart the client. Welcome and setup status stay available. |
-| The client cannot find the server | Confirm the installed runtime or developer checkout still exists, then rerun setup for that client. |
+| The plugin is connected but research needs setup | Ask for setup status. If guided configuration is needed, run setup with `--client none`, then restart the client. |
+| The client cannot find the server | Reinstall or enable its client package. For a guided/developer installation, confirm its runtime still exists and rerun setup for that client. |
 | Optional credentials are locked or missing | Unlock the OS credential store or rerun the relevant guided setup. Local text research remains available. |
 | Astra is unavailable | Check the saved connection. Do not create a replacement local copy of the remote case. |
 | Another setup owns a settings lock | Close the other setup. Remove a leftover lock only after confirming no setup process is running. |
@@ -194,4 +205,4 @@ On a supported native release target, also run `npm run release:package` and `np
 
 [Pilot materials](pilot.md) contain an unsent recruitment draft and evaluation protocol for five professional researchers. The provisional target is at least 25% median reduction in total research effort, with no critical evidence errors in reviewed dossiers. This remains a target, not a measured result.
 
-[Apache License 2.0](../LICENSE). Archival materials retain their own rights and attribution requirements.
+[Apache License 2.0](../LICENSE) · [Privacy](privacy.md). Archival materials retain their own rights and attribution requirements.

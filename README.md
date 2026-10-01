@@ -47,9 +47,17 @@ flowchart LR
 
 ## Start with an address. Keep going tomorrow.
 
-**No database account or model key is needed for public records and text documents.** Guided setup connects Codex, Claude Desktop, or both, then creates persistent local storage.
+**No database account or model key is needed for public records and text documents.** Client packages include Node.js and the document-processing dependencies. Your first local case needs no separate runtime installation or terminal setup.
 
-The one-command installers for macOS and Windows are implemented, but **a packaged release has not yet been published**. Actual desktop-client acceptance is also pending. For now, the developer path requires **Node.js 22.19+, npm, and Git**:
+**Release status:** client packages and one-command installers are being validated. A packaged release and the Git marketplace catalog have not been published yet. Actual desktop-client acceptance remains open.
+
+| Once published | How you will start |
+| --- | --- |
+| **Claude Desktop extension** | Install the `.mcpb` for your computer from Claude's Extensions settings |
+| **Codex custom marketplace** | Add the Plot & Kin marketplace, then install the entry for your computer |
+| **Guided setup for either client** | Run one command on macOS or Windows, then choose your client |
+
+See [client packages and marketplace installation](docs/distribution.md) for platform selection, updates, and the separate public-directory submission process. Until publication, the developer path requires **Node.js 22.19+, npm, and Git**:
 
 ```sh
 git clone https://github.com/jestatsio/plot-and-kin.git
@@ -82,7 +90,7 @@ Compiled building information is identified as a research lead. Map excerpts ret
 | **Your Astra database, if connected** | Structured research for cases you explicitly transfer, or for an explicitly selected Astra default |
 | **Your selected model provider, when enabled** | The document or image content required for requested processing |
 
-Astra is optional and does not back up local original documents. No model key is required for public-record and embedded-text workflows. Model-assisted processing uses your chosen provider and credentials, with no silent provider switching. The $10 default processing cap excludes client charges and database hosting. See [setup and recovery](docs/getting-started.md#processing-budget-and-recovery) and [evidence and data handling](docs/evidence-and-data.md).
+Astra is optional and does not back up local original documents. No model key is required for public-record and embedded-text workflows. Model-assisted processing uses your chosen provider and credentials, with no silent provider switching. The $10 default processing cap excludes client charges and database hosting. See [setup and recovery](docs/getting-started.md#processing-budget-and-recovery), [evidence and data handling](docs/evidence-and-data.md), and the [privacy notice](docs/privacy.md).
 
 ## Built for a careful first pilot
 
@@ -93,6 +101,7 @@ Review approvals are recorded workflow decisions, not an independently authentic
 | Explore | Purpose |
 | --- | --- |
 | [Getting started](docs/getting-started.md) | Installation, both clients, processing, recovery, and backups |
+| [Client packages and marketplaces](docs/distribution.md) | Claude Desktop extensions, Codex catalogs, updates, and publication status |
 | [Evidence and data](docs/evidence-and-data.md) | Citation precision, review rules, provenance, and data boundaries |
 | [Source coverage](docs/source-coverage.md) | DC connectors, fixture provenance, attribution, and gaps |
 | [Client acceptance](docs/client-acceptance.md) | The same research journey in Codex and Claude Desktop |
@@ -101,4 +110,4 @@ Review approvals are recorded workflow decisions, not an independently authentic
 
 Contributions to source coverage, evidence handling, and reproducible case evaluation are welcome. Start with the [development checks](docs/getting-started.md#development-and-validation).
 
-[Apache License 2.0](LICENSE) · Original materials retain their own rights and attribution requirements.
+[Apache License 2.0](LICENSE) · [Privacy](docs/privacy.md) · Original materials retain their own rights and attribution requirements.

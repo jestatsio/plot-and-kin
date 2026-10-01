@@ -1,0 +1,28 @@
+{
+  "manifest_version": "0.3",
+  "name": "plot-and-kin",
+  "display_name": "Plot & Kin",
+  "version": "0.1.0",
+  "description": "Discover a property's history with cited evidence, reviewable findings, and saved research.",
+  "long_description": "Start with an address and a question. Plot & Kin helps you investigate Washington, DC building records, historical maps, and documents you are permitted to use. Review proposed findings before accepting conclusions, then export a dossier with sources, contradictions, and next steps.\n\nYour first local case needs no account, API key, terminal command, or separately installed Node.js. Ask Claude to get started with Plot & Kin or explore a clearly labeled fictional sample. Cases and original documents live outside the extension installation, so updating the extension preserves research. Existing Plot & Kin settings are reused. Optional Astra storage and paid scan interpretation use the separate guided setup. Public-source access requires an internet connection. This extension is a research prototype, with initial coverage limited to selected Washington, DC sources.",
+  "author": { "name": "JEStats", "url": "https://jestats.io" },
+  "homepage": "https://jestatsio.github.io/plot-and-kin/",
+  "documentation": "https://github.com/jestatsio/plot-and-kin/blob/main/docs/getting-started.md",
+  "support": "https://github.com/jestatsio/plot-and-kin/issues",
+  "icon": "icon.png",
+  "privacy_policies": ["https://jestatsio.github.io/plot-and-kin/privacy.html"],
+  "repository": { "type": "git", "url": "https://github.com/jestatsio/plot-and-kin" },
+  "license": "Apache-2.0",
+  "keywords": ["property history", "historical research", "archives", "Washington DC", "evidence"],
+  "tools_generated": true,
+  "prompts_generated": true,
+  "server": {
+    "type": "binary",
+    "entry_point": "bin/node",
+    "mcp_config": {
+      "command": "${__dirname}/bin/node",
+      "args": ["${__dirname}/dist/cli.js", "serve"]
+    }
+  },
+  "compatibility": { "platforms": ["darwin"] }
+}

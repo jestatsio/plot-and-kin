@@ -5,6 +5,8 @@ import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { execFileSync } from 'node:child_process';
+import { packageClaudeExtension } from './package-claude-extension.mjs';
+import { packageCodexPlugin } from './package-codex-plugin.mjs';
 
 const root = fileURLToPath(new URL('../', import.meta.url));
 const runtimeVersion = '22.23.2';
@@ -72,6 +74,9 @@ try {
   }
   const hash = createHash('sha256').update(await readFile(artifact)).digest('hex');
   await writeFile(`${artifact}.sha256`, `${hash}  ${artifactName}\n`);
+  // Every client package is derived from the same tested native runtime.
+  await packageClaudeExtension({ stage, output, platform, version: pkg.version });
+  await packageCodexPlugin({ stage, output, platform, version: pkg.version });
   await writeFile(join(output, 'version.txt'), pkg.version + '\n');
   process.stdout.write(`Built and smoke-tested ${artifactName}\n`);
 } finally {

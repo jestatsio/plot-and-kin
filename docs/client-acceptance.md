@@ -14,6 +14,21 @@ Record release version and artifact checksum, commit, client version, OS version
 
 Automated results: commit `6075099`, Node 22.23.2, October 1, 2026, [native workflow 36905685304](https://github.com/jestatsio/plot-and-kin/actions/runs/36905685304). All three packages passed real document rendering, saved-case restart, installation and rerun, preserved client configuration, corrupt-download rejection, and paths with spaces and non-ASCII characters. The checklist below remains for actual desktop acceptance, including interactive credential prompts and locked-store behavior.
 
+## Native plugin distribution checks
+
+The distribution implementation adds Claude Desktop `.mcpb` files, offline Codex marketplace ZIPs, and an assembled Git marketplace with a separate entry for each platform. These use the same native runtime as the guided installer. Public directory submission and approval have not occurred.
+
+On October 1, 2026, local macOS Apple Silicon validation passed:
+
+- Official MCPB schema validation, packaging, and extraction. The emitted extension created a first case without API keys or system Node, then retained it and the existing settings after replacement of its installation directory.
+- Both Codex package forms installed through the real pinned Codex 0.159.3 CLI in isolated profiles. Its app server discovered the research skill and MCP tools, created a synthetic case, restarted, and recovered the case. No model conversation or user-account credentials were needed for this test.
+- Concurrent offline runtime extraction, checksum failure rejection, Unicode paths and evidence, and persistent records after replacement of the plugin cache.
+- Complete release validation rejects missing extension assets, damaged packages, and a mismatched version before publication.
+
+The actual Codex loader test caught and fixed a portable-manifest executable-path incompatibility that simulated MCP launches did not detect. `npm run test:codex-client` now runs against each native package in release CI. This is real client-loader acceptance, **not** desktop UI or conversational acceptance. Claude Desktop's installation controls were inspected on this Mac, but its extension installation still requires an explicit operator decision.
+
+Run `npm run release:package`, `PK_TEST_PACKAGED_DISTRIBUTION=1 npm run test:distribution` (set the equivalent environment variable in PowerShell), and `npm run test:codex-client` to reproduce native checks. Keep actual UI results below separate.
+
 - [ ] Run one release setup command from a clean installation without Node or Git already installed.
 - [ ] Choose both clients and local storage without entering any credentials.
 - [ ] Verify existing client settings and unrelated servers survive, with readable backups of changed files.
