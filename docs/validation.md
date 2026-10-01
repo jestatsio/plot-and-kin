@@ -18,6 +18,10 @@ The onboarding implementation adds persistent local storage, recoverable setup, 
 
 The standard [CI workflow](../.github/workflows/ci.yml) exercises Node 22 and 24. The [native release workflow](../.github/workflows/release.yml) builds on macOS Apple Silicon, macOS Intel, and Windows x64. Configuring a job does not establish that its latest run passed. A packaged researcher release has not been published yet, and native automated checks do not close the desktop acceptance gate.
 
+The onboarding implementation at `6075099` passed the Node 22 and 24 validation jobs and all three targets in [installer workflow 36905685304](https://github.com/jestatsio/plot-and-kin/actions/runs/36905685304). Local coverage validation passed 287 tests plus two CLI subprocess checks. The native bundles use Node 22.23.2 and passed real PDF extraction and rendering, persistent local cases across restart, synthetic credentials in the operating system's credential store, and installation into isolated client configurations. Installation tests preserve unrelated settings, rerun setup, reject corrupt downloads, and exercise paths containing spaces and non-ASCII characters. The Windows installation/rerun/rejection journey completed in 41.2 seconds on its hosted runner, excluding packaging and real network downloads. This is an automated integration result, not a researcher setup-time measurement.
+
+The native credential test is enabled only on disposable CI workers and does not modify a developer's personal keychain. Test artifacts are available from the linked workflow. No public installer release was published by that run.
+
 For historical context, the initial prototype's automated jobs passed for `9434bc8` in [GitHub Actions run 36895894619](https://github.com/jestatsio/plot-and-kin/actions/runs/36895894619). That result predates the onboarding work. Use later commits' own checks for the new behavior.
 
 The documentation site and actual exported HTML dossier were also inspected in a browser at desktop and 390-pixel mobile widths. Images and navigation anchors resolved, code-copy controls reported success, client setup sections opened, and neither page had horizontal overflow at the mobile breakpoint. These are documentation checks, not acceptance of the MCP service inside either desktop client.
@@ -28,6 +32,7 @@ The suites include durable local restart and concurrent revisions, guided setup 
 
 - The researcher-owned Astra database accepted dedicated `pk_records` and `pk_passages` collections. Lexical capability checks and passage retrieval passed. The existing unrelated `documents` collection was preserved, with its approximate count unchanged at 26 during the check.
 - A complete live text workflow retrieved the DC HistoryQuest record for 1920 Rosedale Street NE, reused the source on repeated lookup, retrieved retained evidence lexically, exported HTML, and backed up/restored the project.
+- The new local backend also completed a live HistoryQuest lookup for that address, retained a cited proposal, exported HTML, closed and reopened the database, and retrieved its saved passage. No researcher approval was invented during the check.
 - HistoryQuest fixtures include the distinct 316 and 318 A Street NE records that share parcel 0785/0046.
 - The Sanborn connector returned a real PNG excerpt with the service's actual extent and attribution. The connector accounts for the fused map cache and does not mistake its boundary overlay for the historical raster.
 
@@ -35,8 +40,8 @@ Live checks created test projects in the dedicated Plot & Kin collections. They 
 
 ## Remaining acceptance work
 
-- Finish the native platform release matrix, review its exact artifacts and checksums, and publish a versioned release only after its acceptance gates are met. One-command download URLs remain unavailable until publication.
-- Verify secure credential entry and retrieval on actual macOS and Windows installations. Mocked vault tests establish application behavior but do not establish OS integration.
+- Complete desktop acceptance for the tested native artifacts before publishing a versioned researcher release. One-command download URLs remain unavailable until publication.
+- Verify interactive secure credential entry, permission prompts, and locked-store recovery in actual macOS and Windows desktop installations. Native CI tests real credential persistence with synthetic values, while interactive desktop behavior remains a separate check.
 
 - Complete the same research journey in the actual Codex and Claude Desktop applications using [the client checklist](client-acceptance.md). SDK client simulations and subprocess tests do not establish host application acceptance.
 - Configure a chosen provider/model and verified prices, then evaluate real printed scans, difficult handwriting, photographs, and maps. Both provider adapters have mocked contract tests. No billable model generation was performed for this validation, and extraction quality has not been measured.

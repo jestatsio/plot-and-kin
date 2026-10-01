@@ -8,9 +8,11 @@ Record release version and artifact checksum, commit, client version, OS version
 
 | Target | Native packaged installation | Codex journey | Claude Desktop journey | OS credential store |
 | --- | --- | --- | --- | --- |
-| macOS Apple Silicon | Automated artifact checks available, manual clean installation pending | Pending | Pending | Pending |
-| macOS Intel | Native CI configured, acceptance pending | Pending | Pending | Pending |
-| Windows x64 | Native CI configured, acceptance pending | Pending | Pending | Pending |
+| macOS Apple Silicon | Passed in CI with isolated client settings | Pending | Pending | Synthetic Keychain round trip passed in CI |
+| macOS Intel | Passed in CI with isolated client settings | Pending | Pending | Synthetic Keychain round trip passed in CI |
+| Windows x64 | Passed in CI with isolated client settings | Pending | Pending | Synthetic DPAPI round trip passed in CI |
+
+Automated results: commit `6075099`, Node 22.23.2, October 1, 2026, [native workflow 36905685304](https://github.com/jestatsio/plot-and-kin/actions/runs/36905685304). All three packages passed real document rendering, saved-case restart, installation and rerun, preserved client configuration, corrupt-download rejection, and paths with spaces and non-ASCII characters. The checklist below remains for actual desktop acceptance, including interactive credential prompts and locked-store behavior.
 
 - [ ] Run one release setup command from a clean installation without Node or Git already installed.
 - [ ] Choose both clients and local storage without entering any credentials.
