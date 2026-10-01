@@ -1,0 +1,45 @@
+{
+  "name": "plot-and-kin",
+  "version": "0.1.0",
+  "description": "Evidence-backed property research for Codex and Claude Desktop",
+  "type": "module",
+  "license": "Apache-2.0",
+  "engines": {
+    "node": ">=22"
+  },
+  "bin": {
+    "plot-and-kin": "dist/cli.js"
+  },
+  "files": [
+    "dist",
+    "skills",
+    ".codex-plugin",
+    ".mcp.json",
+    "README.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "vitest run",
+    "test:coverage": "vitest run --coverage",
+    "check": "npm run typecheck && npm test",
+    "start": "node dist/cli.js serve",
+    "prepack": "npm run build"
+  },
+  "dependencies": {
+    "@datastax/astra-db-ts": "2.3.0",
+    "@modelcontextprotocol/sdk": "1.31.0",
+    "@napi-rs/canvas": "1.0.9",
+    "pdfjs-dist": "6.3.289",
+    "sharp": "0.35.5",
+    "undici": "8.11.2",
+    "zod": "4.6.5"
+  },
+  "devDependencies": {
+    "@types/node": "26.6.3",
+    "@vitest/coverage-v8": "5.0.3",
+    "typescript": "7.0.2",
+    "vitest": "5.0.3"
+  }
+}
