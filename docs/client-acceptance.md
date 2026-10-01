@@ -1,6 +1,6 @@
 # Actual client acceptance checklist
 
-Status: **not yet completed in the actual desktop applications**. Setup can test an actual stdio subprocess and its readiness response. That verifies the local server, not the client UI, permissions, or conversational behavior. No packaged researcher release has been published yet.
+Status: **partial desktop acceptance completed**. Claude Desktop on Apple Silicon passed installation, fictional sample creation, citation reading, and dossier export. The full desktop journey remains open. Automated stdio and loader checks are recorded separately below. No packaged researcher release has been published yet.
 
 Record release version and artifact checksum, commit, client version, OS version, architecture, runtime version, date, operator, and evidence for each run. Keep macOS Apple Silicon, macOS Intel, and Windows x64 results separate. Leave untested items unchecked.
 
@@ -8,7 +8,7 @@ Record release version and artifact checksum, commit, client version, OS version
 
 | Target | Native packaged installation | Codex journey | Claude Desktop journey | OS credential store |
 | --- | --- | --- | --- | --- |
-| macOS Apple Silicon | Passed in CI with isolated client settings | Loader/restart passed. Desktop journey pending | Desktop journey pending | Synthetic Keychain round trip passed in CI |
+| macOS Apple Silicon | Passed in CI with isolated client settings | Loader/restart passed. Desktop journey pending | Install, sample, citation, export passed. Resume pending | Synthetic Keychain round trip passed in CI |
 | macOS Intel | Passed in CI with isolated client settings | Loader/restart passed. Desktop journey pending | Desktop journey pending | Synthetic Keychain round trip passed in CI |
 | Windows x64 | Passed in CI with isolated client settings | Loader/restart passed. Desktop journey pending | Desktop journey pending | Synthetic DPAPI round trip passed in CI |
 
@@ -25,7 +25,9 @@ On October 1, 2026, all three native release jobs passed at commit `0a4e54c50019
 - Concurrent offline startup, checksum failure rejection, Unicode paths and evidence, and persistent records after replacement of the plugin cache. Mac catalogs extract their bundled archive at first launch. Windows catalogs contain the runtime ready to execute.
 - Complete release validation rejects missing extension assets, damaged packages, and a mismatched version before publication.
 
-The actual Codex loader test caught and fixed a portable-manifest executable-path incompatibility that simulated MCP launches did not detect. Windows catalogs now launch the included Node executable directly. `npm run test:codex-client` runs against each native package in release CI. This is real client-loader acceptance, **not** desktop UI or conversational acceptance. Claude Desktop's installation controls were inspected on this Mac, but its extension installation still requires an explicit operator decision.
+The actual Codex loader test caught and fixed a portable-manifest executable-path incompatibility that simulated MCP launches did not detect. Windows catalogs now launch the included Node executable directly. `npm run test:codex-client` runs against each native package in release CI. This is real client-loader acceptance, **not** desktop UI or conversational acceptance. The subsequent documentation-only commit `a9888dd` also passed all native jobs and catalog assembly in [workflow 36921272427](https://github.com/jestatsio/plot-and-kin/actions/runs/36921272427).
+
+The authorized Claude Desktop walkthrough is recorded separately with its package hash, client version, results, limitations, and an actual installation screenshot in [October 1 desktop acceptance](acceptance/2026-10-01-claude-desktop.md). Only observed steps count as passed. The complete journeys below remain unchecked until their full conditions are met.
 
 Run `npm run release:package`, `PK_TEST_PACKAGED_DISTRIBUTION=1 npm run test:distribution` (set the equivalent environment variable in PowerShell), and `npm run test:codex-client` to reproduce native checks. Keep actual UI results below separate.
 

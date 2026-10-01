@@ -431,7 +431,8 @@ export async function buildDossier(store: RecordStore, projectId: string): Promi
     if (evidence.some(entry => entry.stance === 'opposing')) sections[4]!.items.push(item);
   }
   for (const source of records.filter(item => item.kind === 'source')) {
-    sections[5]!.items.push({ text: `${source._id}: ${text(source.data.title)}`, details: [text(source.data.url), `Rights/attribution: ${text(source.data.rights)} ${text(source.data.attribution)}`, ...records.filter(record => record.kind === 'passage' && record.data.sourceId === source._id).map(passage => `Passage ${passage._id}: ${text(passage.data.locator)} — ${text(passage.data.text)}`)].filter(Boolean) });
+    const rights = text(source.data.rights).trim(), attribution = text(source.data.attribution).trim();
+    sections[5]!.items.push({ text: `${source._id}: ${text(source.data.title)}`, details: [text(source.data.url), rights ? `Rights: ${rights}` : '', attribution ? `Attribution: ${attribution}` : '', ...records.filter(record => record.kind === 'passage' && record.data.sourceId === source._id).map(passage => `Passage ${passage._id}: ${text(passage.data.locator)} — ${text(passage.data.text)}`)].filter(Boolean) });
   }
   for (const record of records.filter(item => item.kind === 'log' || item.kind === 'run')) sections[6]!.items.push({ text: `${record._id} (${record.kind})`, details: [text(record.data)] });
   for (const record of records.filter(item => item.kind === 'decision')) sections[7]!.items.push({ text: `${record._id}: ${text(record.data.decision)} by ${text(record.data.reviewer)}`, details: [`Target ${text(record.data.targetId)}, revision ${text(record.data.targetRevision)}`, text(record.data.approvalText)] });
@@ -444,7 +445,8 @@ export async function buildDossier(store: RecordStore, projectId: string): Promi
     details: [`Claim ${entry.claimId}. Review: ${entry.reviewStatus}. Category: ${entry.category ?? 'unspecified'}. Date precision: ${entry.dateInterpretation}.`, ...(entry.dateInterpretation === 'approximate' || entry.dateInterpretation === 'range' || entry.dateInterpretation === 'year' || entry.dateInterpretation === 'month' ? ['Chronological placement uses the earliest supplied date component for ordering only. It does not establish an exact event date.'] : [])],
   })) });
   const title = `Plot & Kin: ${text(project.data.address || project.data.title || projectId)}`;
-  const intro = `Research question: ${text(project.data.question)}. Human approval is recorded from the client conversation, not independently authenticated by the MCP server.`;
+  const question = text(project.data.question).trim();
+  const intro = `Research question: ${question}${/[.!?…]$/.test(question) ? '' : '.'} Human approval is recorded from the client conversation, not independently authenticated by the MCP server.`;
   const markdown = [`# ${escapeMarkdown(title)}`, '', escapeMarkdown(intro), '', ...sections.flatMap(section => [`## ${section.title}`, '', ...(section.items.length ? section.items.flatMap(item => [`- ${escapeMarkdown(item.text)}`, ...item.details.map(detail => `  - ${escapeMarkdown(detail)}`)]) : ['No entries.']), ''])].join('\n');
   const html = `<!doctype html>
 <html lang="en">
