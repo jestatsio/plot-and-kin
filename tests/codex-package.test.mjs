@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { execFileSync } from 'node:child_process';
+import { execFileSync, spawnSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
 import { cp, mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
@@ -16,6 +16,7 @@ const { version } = JSON.parse(await readFile(join(root, 'package.json'), 'utf8'
 const platform = `${process.platform}-${process.arch}`;
 const supported = ['darwin-arm64', 'darwin-x64', 'win32-x64'];
 const testPackaged = process.env.PK_TEST_PACKAGED_DISTRIBUTION === '1' && supported.includes(platform);
+const clientProcesses = new WeakMap();
 
 test('native manifests are portable, stable, and do not require a system runtime', () => {
   for (const target of supported) {
@@ -58,9 +59,41 @@ async function connect(plugin, data) {
     stderr: 'pipe',
   });
   const client = new Client({ name: 'codex-package-acceptance', version: '1.0.0' });
+  const owned = { transport, windowsShell, stderr: '' };
+  clientProcesses.set(client, owned);
+  transport.stderr?.on('data', bytes => { owned.stderr = (owned.stderr + bytes.toString('utf8')).slice(-16_384); });
   try { await client.connect(transport); }
-  catch (error) { await client.close(); throw error; }
+  catch (error) {
+    const failure = new Error(`MCP connection failed: ${error.message}\nLauncher stderr: ${owned.stderr || '(empty)'}`, { cause: error });
+    try { await closeClient(client); }
+    catch (cleanupError) { failure.message += `\nProcess cleanup: ${cleanupError.message}`; }
+    throw failure;
+  }
   return client;
+}
+
+async function closeClient(client) {
+  if (!client) return;
+  const owned = clientProcesses.get(client);
+  const failures = [];
+  // SDK close() terminates only its immediate child. Windows has no exec(), so
+  // the Git launcher has a Node descendant that must be included in test-owned
+  // process teardown. Never target unrelated processes by executable name.
+  try {
+    if (owned?.windowsShell && owned.transport.pid) {
+      const taskkill = join(process.env.SystemRoot ?? process.env.SYSTEMROOT, 'System32', 'taskkill.exe');
+      const result = spawnSync(taskkill, ['/PID', String(owned.transport.pid), '/T', '/F'], { encoding: 'utf8', windowsHide: true, timeout: 15_000 });
+      if (result.error) throw new Error(`Owned launcher process cleanup failed: ${result.error.message}`);
+      // taskkill returns 128 when the process completed before the request.
+      if (result.status !== 0 && result.status !== 128) throw new Error(`Owned launcher process cleanup failed (${result.status}): ${result.stderr}`);
+    }
+  } catch (error) { failures.push(error); }
+  finally {
+    try { await client.close(); }
+    catch (error) { failures.push(error); }
+    clientProcesses.delete(client);
+  }
+  if (failures.length) throw new AggregateError(failures, 'Owned MCP process cleanup failed');
 }
 
 function resolveCommand(command, plugin) {
@@ -74,7 +107,9 @@ function resolveCommand(command, plugin) {
 }
 
 async function call(client, name, args = {}) {
-  const result = await client.callTool({ name, arguments: args });
+  let result;
+  try { result = await client.callTool({ name, arguments: args }); }
+  catch (error) { throw new Error(`${name} failed: ${error.message}\nLauncher stderr: ${clientProcesses.get(client)?.stderr || '(empty)'}`, { cause: error }); }
   assert.notEqual(result.isError, true, JSON.stringify(result));
   return result.structuredContent.result;
 }
@@ -113,7 +148,7 @@ test('extracted and relocated Codex package starts without Node on PATH and pres
       base64: Buffer.from('Ada Example occupied Example House in 1901. Synthetic fixture.').toString('base64'),
     });
     await call(client, 'page_process', { projectId, runId: run._id, sourceId: sourceRecord._id, page: 1 });
-    await client.close(); client = undefined;
+    await closeClient(client); client = undefined;
     const secondCache = join(work, 'replacement cache', 'plot-and-kin');
     await cp(firstCache, secondCache, { recursive: true });
     await rm(firstCache, { recursive: true, force: true });
@@ -126,12 +161,12 @@ test('extracted and relocated Codex package starts without Node on PATH and pres
     assert.match(JSON.stringify(dossier), /Synthetic directory/);
     const exported = await call(client, 'project_export', { projectId, format: 'html' });
     assert.match(JSON.stringify(exported), /html/);
-    await client.close(); client = undefined;
+    await closeClient(client); client = undefined;
     await rm(secondCache, { recursive: true, force: true });
     // Simulated uninstall removes the plugin only. Case data remains readable.
     assert.equal((await readFile(join(data, 'records.sqlite'))).subarray(0, 15).toString(), 'SQLite format 3');
   } finally {
-    await client?.close();
+    await closeClient(client);
     await rm(work, { recursive: true, force: true });
   }
 });
@@ -171,9 +206,11 @@ test('Git catalog embeds verified offline payloads with explicit platform choice
   } finally { await rm(work, { recursive: true, force: true }); }
 });
 
-test('offline Git marketplace extracts once under concurrent launch and rejects a modified payload', { skip: !testPackaged, timeout: process.platform === 'win32' ? 900_000 : 300_000 }, async () => {
+test('offline Git marketplace extracts once under concurrent launch and rejects a modified payload', { skip: !testPackaged, timeout: process.platform === 'win32' ? 900_000 : 300_000 }, async t => {
   const work = await mkdtemp(join(tmpdir(), 'pk-codex-offline-é space-'));
   const clients = [];
+  let phase = 'assemble offline catalog';
+  let primaryError;
   try {
     const output = join(work, 'marketplace');
     const catalog = await assembleCodexMarketplace({ assets: join(root, 'artifacts/release'), output, version, targets: [platform] });
@@ -183,15 +220,21 @@ test('offline Git marketplace extracts once under concurrent launch and rejects 
     await Promise.all([mkdir(firstData), mkdir(secondData)]);
     // Both clients cold-start the same plugin. Extraction must publish exactly
     // one complete runtime and leave the MCP stdout stream unpolluted.
+    phase = 'concurrent cold MCP connections';
     const connected = await Promise.allSettled([connect(plugin, firstData), connect(plugin, secondData)]);
     for (const result of connected) if (result.status === 'fulfilled') clients.push(result.value);
     for (const result of connected) if (result.status === 'rejected') throw result.reason;
+    phase = 'create Unicode case';
     const project = await call(clients[0], 'project_create', { address: 'Offline Git fixture · Émilie / 東京', question: 'Does the plugin start offline?' });
     assert.ok(project.projectId ?? project._id);
+    phase = 'Unicode case roundtrip';
     assert.match(JSON.stringify(await call(clients[0], 'project_list')), /Émilie \/ 東京/);
     assert.ok((await clients[1].listTools()).tools.length > 0);
-    await Promise.all(clients.splice(0).map(client => client.close()));
+    phase = 'owned process-tree shutdown';
+    await Promise.all(clients.map(client => closeClient(client)));
+    clients.length = 0;
     // Every launch checks the shipped bytes even after a runtime was cached.
+    phase = 'tampered archive rejection';
     await writeFile(join(plugin, 'runtime.zip'), 'Modified archive');
     const config = JSON.parse(await readFile(join(plugin, 'mcp.json'), 'utf8')).mcpServers['plot-and-kin'];
     let failed;
@@ -200,8 +243,17 @@ test('offline Git marketplace extracts once under concurrent launch and rejects 
     } catch (error) { failed = error; }
     assert.ok(failed);
     assert.match(String(failed.stderr), /checksum failed/);
+  } catch (error) {
+    primaryError = error;
+    t.diagnostic(`Offline launcher failed during ${phase}: ${error.stack ?? error}`);
+    for (const client of clients) t.diagnostic(`Launcher stderr: ${clientProcesses.get(client)?.stderr || '(empty)'}`);
+    throw error;
   } finally {
-    await Promise.all(clients.map(client => client.close()));
-    await rm(work, { recursive: true, force: true });
+    const cleanup = await Promise.allSettled(clients.map(client => closeClient(client)));
+    try { await rm(work, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 }); }
+    catch (error) { cleanup.push({ status: 'rejected', reason: error }); }
+    const failures = cleanup.filter(result => result.status === 'rejected');
+    for (const result of failures) t.diagnostic(`Cleanup failure: ${result.reason.stack ?? result.reason}`);
+    if (!primaryError && failures.length) throw new AggregateError(failures.map(result => result.reason), 'Offline launcher cleanup failed');
   }
 });
