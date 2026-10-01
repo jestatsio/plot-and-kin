@@ -2,6 +2,14 @@
   "name": "plot-and-kin",
   "version": "0.1.0",
   "description": "Evidence-backed property research for Codex and Claude Desktop",
+  "homepage": "https://jestatsio.github.io/plot-and-kin/",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/jestatsio/plot-and-kin.git"
+  },
+  "bugs": {
+    "url": "https://github.com/jestatsio/plot-and-kin/issues"
+  },
   "type": "module",
   "license": "Apache-2.0",
   "engines": {
@@ -26,6 +34,7 @@
     "test": "vitest run",
     "test:coverage": "vitest run --coverage",
     "test:cli": "node --test tests/cli.test.mjs",
+    "docs:example": "npm run build && node scripts/generate-docs-example.mjs",
     "check": "npm run typecheck && npm test",
     "start": "node dist/cli.js serve",
     "prepack": "npm run build"

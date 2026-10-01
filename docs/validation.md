@@ -8,12 +8,14 @@ Recorded on 2026-10-01. These checks establish implementation behavior, not rese
 | --- | --- |
 | TypeScript type checking | Passed |
 | Vitest domain, storage, connector, processing, portability, and MCP contracts | 199 tests passed across 13 suites |
-| Coverage excluding the separately exercised CLI | 87.43% statements, 84.13% branches, 86.32% functions, 97.62% lines |
+| Coverage excluding the separately exercised CLI | 87.48% statements, 84.12% branches, 86.48% functions, 97.64% lines |
 | Production TypeScript build | Passed |
 | CLI subprocess tests | 2 passed, including a real stdio MCP process and a synthetic dossier/restore journey |
 | npm package dry run | Required compiled entry point, plugin manifests, MCP configuration, skill, and license included |
 
-Run `npm run typecheck`, `npm run test:coverage`, `npm run build`, and `npm run test:cli` to repeat the checks. The checked-in CI workflow runs these checks on Node 22 and 24. This record does not claim that remote CI has run.
+Run `npm run typecheck`, `npm run test:coverage`, `npm run build`, and `npm run test:cli` to repeat the checks. The checked-in CI workflow runs these checks on Node 22 and 24. Both jobs passed remotely for the initial prototype commit `9434bc8` in [GitHub Actions run 36895894619](https://github.com/jestatsio/plot-and-kin/actions/runs/36895894619). Later commits have their own check results.
+
+The documentation site and actual exported HTML dossier were also inspected in a browser at desktop and 390-pixel mobile widths. Images and navigation anchors resolved, code-copy controls reported success, client setup sections opened, and neither page had horizontal overflow at the mobile breakpoint. These are documentation checks, not acceptance of the MCP service inside either desktop client.
 
 Tests cover contradictory claims, stale approvals, passage corrections, identity proposals, citation bounds, run and budget exhaustion, concurrent writes, provider failures, SSRF protections, path restrictions, malicious document content, HTML escaping, idempotent copies, and validated restoration. Processing recovery tests include saved results, missing checkpoints, stranded reservations after a hard exit, provider/model changes, and restoration without duplicate passages or automatic billing retries.
 
