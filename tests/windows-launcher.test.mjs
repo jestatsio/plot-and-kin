@@ -1,4 +1,4 @@
-/** Exercise the Windows bootstrap without rebuilding the research application. */
+/** Exercise cached Windows launcher I/O without packaging the application. */
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { spawn, execFileSync } from 'node:child_process';
@@ -8,11 +8,16 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { createInterface } from 'node:readline';
 
-test('Windows launcher preserves a duplex Unicode stream and exits on EOF', { skip: process.platform !== 'win32', timeout: 90_000 }, async t => {
+test('Windows launcher preserves a duplex Unicode stream and exits on EOF', { skip: process.platform !== 'win32', timeout: 60_000 }, async t => {
   const work = await mkdtemp(join(tmpdir(), 'pk-win-launcher-é space-'));
   const systemRoot = Object.entries(process.env).find(([key]) => /^SystemRoot$/i.test(key))[1];
   const powershell = join(systemRoot, 'System32/WindowsPowerShell/v1.0/powershell.exe');
-  const stage = join(work, 'stage');
+  // Full distribution tests cover cold extraction. This tiny valid empty ZIP
+  // and prepared cache isolate stream behavior from native-runtime compression.
+  const archive = Buffer.alloc(22);
+  archive.writeUInt32LE(0x06054b50);
+  const hash = createHash('sha256').update(archive).digest('hex');
+  const stage = join(work, `runtime-${hash}`);
   const plugin = join(stage, 'plot-and-kin-codex/plugins/plot-and-kin');
   const payload = join(work, 'runtime.zip');
   let child;
@@ -42,10 +47,8 @@ process.stdin.on('data', chunk => {
 process.stdin.on('end', () => process.stderr.write('fixture EOF\\n'));
 `);
     const env = Object.fromEntries(Object.entries(process.env).filter(([key]) => /^(SystemRoot|WINDIR|TEMP|TMP)$/i.test(key)));
-    execFileSync(powershell, ['-NoProfile', '-NonInteractive', '-Command', "$ErrorActionPreference='Stop'; Add-Type -AssemblyName System.IO.Compression.FileSystem; [IO.Compression.ZipFile]::CreateFromDirectory($env:PK_TEST_STAGE, $env:PK_TEST_ARCHIVE, [IO.Compression.CompressionLevel]::Fastest, $false)"], {
-      env: { ...env, PK_TEST_STAGE: stage, PK_TEST_ARCHIVE: payload }, timeout: 30_000,
-    });
-    const hash = createHash('sha256').update(await readFile(payload)).digest('hex');
+    await writeFile(payload, archive);
+    await writeFile(join(stage, '.payload-sha256'), hash);
     const source = await readFile(new URL('../distribution/codex/launch.ps1', import.meta.url), 'utf8');
     await mkdir(join(work, 'scripts'));
     const launcher = join(work, 'scripts/launch.ps1');
