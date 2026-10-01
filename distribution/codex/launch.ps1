@@ -18,6 +18,9 @@ $pkStage = $null
 $pkLockHandle = $null
 $pkChild = $null
 $pkChildStarted = $false
+function Write-PkTrace([string]$Stage) {
+  if ($env:PK_LAUNCHER_TRACE -eq '1') { [Console]::Error.WriteLine('Plot & Kin launcher: ' + $Stage) }
+}
 function Test-PkReady {
   $pkMarker = Join-Path $pkRuntime '.payload-sha256'
   return ((Test-Path -LiteralPath $pkNode -PathType Leaf) -and (Test-Path -LiteralPath $pkCli -PathType Leaf) -and (Test-Path -LiteralPath $pkMarker -PathType Leaf) -and ([IO.File]::ReadAllText($pkMarker).Trim() -eq $pkExpected))
@@ -57,16 +60,44 @@ try {
   $pkStart.RedirectStandardInput = $true
   $pkStart.RedirectStandardOutput = $true
   $pkStart.RedirectStandardError = $true
+  # Framework's Process.StandardInput.BaseStream is a buffered FileStream.
+  # CopyToAsync does not flush after each write, so a small MCP request can sit
+  # in its 4096-byte buffer while the client waits for a response. Preserve raw
+  # bytes and flush each bounded chunk without PowerShell pipeline conversion.
+  Add-Type -TypeDefinition @'
+using System.IO;
+using System.Threading.Tasks;
+public static class PlotKinInputPump {
+    public static async Task CopyAndFlushAsync(Stream input, Stream output) {
+        byte[] buffer = new byte[8192];
+        int count;
+        while ((count = await input.ReadAsync(buffer, 0, buffer.Length).ConfigureAwait(false)) != 0) {
+            await output.WriteAsync(buffer, 0, count).ConfigureAwait(false);
+            await output.FlushAsync().ConfigureAwait(false);
+        }
+    }
+}
+'@
   $pkChild = New-Object Diagnostics.Process
   $pkChild.StartInfo = $pkStart
+  Write-PkTrace 'before-start'
   if (-not $pkChild.Start()) { throw 'The bundled research server could not start.' }
   $pkChildStarted = $true
-  $pkInput = [Console]::OpenStandardInput().CopyToAsync($pkChild.StandardInput.BaseStream)
+  Write-PkTrace 'after-start'
+  Write-PkTrace 'before-input-copy'
+  $pkInput = [PlotKinInputPump]::CopyAndFlushAsync([Console]::OpenStandardInput(), $pkChild.StandardInput.BaseStream)
+  Write-PkTrace 'after-input-copy'
+  Write-PkTrace 'before-output-copy'
   $pkOutput = $pkChild.StandardOutput.BaseStream.CopyToAsync([Console]::OpenStandardOutput())
+  Write-PkTrace 'after-output-copy'
+  Write-PkTrace 'before-error-copy'
   $pkErrors = $pkChild.StandardError.BaseStream.CopyToAsync([Console]::OpenStandardError())
+  Write-PkTrace 'after-error-copy'
   $pkInputClosed = $false
+  Write-PkTrace 'before-loop'
   while (-not $pkChild.WaitForExit(50)) {
     if (-not $pkInputClosed -and $pkInput.IsCompleted) {
+      Write-PkTrace 'input-eof'
       # Propagate host EOF so Node and its SQLite handles exit with the client.
       $null = $pkInput.GetAwaiter().GetResult()
       $pkChild.StandardInput.Close()
@@ -74,6 +105,7 @@ try {
     }
     if ($pkOutput.IsFaulted -or $pkErrors.IsFaulted) { throw 'The client closed its MCP output stream.' }
   }
+  Write-PkTrace 'after-loop'
   # Drain both output streams before returning the child's exit status.
   $null = $pkOutput.GetAwaiter().GetResult()
   $null = $pkErrors.GetAwaiter().GetResult()
