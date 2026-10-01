@@ -14,12 +14,15 @@ Review decisions preserve the target revision, reviewer label, approval wording,
 
 | Location | Contents |
 | --- | --- |
-| Researcher's Astra database | Project state, source metadata, passages, proposed claims, review history, logs, and budget state in `pk_*` collections |
+| Local SQLite database, by default | Persistent project state, passages, claims, decisions, logs, budget state, and transfer locations |
+| Researcher's Astra database, if selected | Structured research in dedicated `pk_*` collections for transferred cases or an explicitly chosen Astra default |
 | Local library | Content-addressed original and derived asset bytes, import directory, and exported files |
 | Selected OpenAI or Anthropic API | The material supplied for an explicitly requested processing operation |
 | Codex or Claude client | The conversation and MCP results requested by that client |
 
-No provider fallback is implicit. No provider key is embedded in a project or export. Process environment and client configuration are separate from portable research.
+No provider fallback is implicit. No provider key is embedded in a project or export. Nonsecret setup preferences live outside replaceable runtime directories. macOS Keychain and Windows DPAPI protect saved credentials. Client registration contains a settings-directory reference rather than tokens. Explicit environment overrides remain available for advanced deployments.
+
+Local cases persist across restarts and use transactional revision checks and idempotency rules. Codex and Claude Desktop can access the same library concurrently. Model configuration is optional and cannot make public-record or text research depend on a model key.
 
 Before importing third-party records, establish permission for possession, processing, retention, and the intended export. Public access does not itself establish redistribution rights. Source-specific restrictions must travel with source metadata and constrain the research run.
 
@@ -40,3 +43,11 @@ Restore validates the bundle before writes, checks every referenced asset, remap
 Explicit reuse inside the same library copies a selected record and its evidence dependencies. It preserves source-project IDs as origin metadata. It resets review approval because a conclusion appropriate to one research question is not automatically approved for another.
 
 Copy operations retain an input fingerprint, deterministic output IDs, and progress. Repeating an unchanged request resumes the same operation. Dependencies are written before claims and completion requires every referenced record. Processing-job links remain in origin provenance rather than importing jobs into the new project. Restore remaps saved processing links, retry chains, and budget reservations, including approved attempts that have not yet been dispatched.
+
+## Moving a case to Astra
+
+Connecting Astra records an optional connection without moving local cases. An explicit case transfer takes a consistent snapshot and prevents competing source writes while it verifies the destination. It checks the evidence graph and asset hashes, preserves review snapshots, alternatives, corrections, research logs, and consumed or reserved processing budget, then records the new active location.
+
+The original local case remains a read-only archive after success. Original and derived document bytes remain in the local library. There is no automatic synchronization, shared-account feature, or cloud document backup.
+
+A failed or interrupted transfer is a saved operation. Resume the same operation, or follow its cancellation/recovery instructions after confirming the previous process has stopped. A destination awaiting verification is unavailable for ordinary research. An unavailable Astra case is identified as unavailable rather than silently recreated locally. Uncertain billing remains uncertain in the transferred case.

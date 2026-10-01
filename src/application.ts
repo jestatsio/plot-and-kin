@@ -4,6 +4,9 @@ import { basename, join } from 'node:path';
 import { constants } from 'node:fs';
 import { type RuntimeConfig } from './config.js';
 import { AstraStore, MemoryStore } from './storage.js';
+import { LocalStore } from './local-storage.js';
+import { CaseStore } from './case-store.js';
+import { transferLocalProject } from './transfer.js';
 import { ResearchService, type BudgetOperation } from './research.js';
 import { LocalBlobStore, MAX_SOURCE_BYTES, readImportFile } from './library.js';
 import { safeFetch } from './network.js';
@@ -27,24 +30,84 @@ export class Application {
   readonly documents: DocumentProcessor;
   private readonly history: HistoryQuestConnector;
   private readonly maps: SanbornConnector;
-  private readonly provider?: ReturnType<typeof createProvider>;
+  private provider?: ReturnType<typeof createProvider>;
+  private readonly local?: LocalStore;
+  private astra?: { store: AstraStore; destinationId: string };
   constructor(readonly config: RuntimeConfig, dependencies: ApplicationDependencies = {}) {
-    this.store = dependencies.store ?? (config.storage === 'memory' ? new MemoryStore() : new AstraStore(config.endpoint!, config.token!, config.keyspace));
+    if (!dependencies.store && config.storage === 'local') this.local = new LocalStore(join(config.libraryDir, 'records.sqlite'));
+    this.store = dependencies.store ?? (config.storage === 'memory' ? new MemoryStore() : this.local ? new CaseStore(this.local, () => this.astraDestination()) : new AstraStore(config.endpoint!, config.token!, config.keyspace));
     this.blobs = dependencies.blobs ?? new LocalBlobStore(join(config.libraryDir, 'blobs'));
     this.research = new ResearchService(this.store);
     this.documents = dependencies.documents ?? new DocumentProcessor();
     this.history = dependencies.history ?? new HistoryQuestConnector();
     this.maps = dependencies.maps ?? new SanbornConnector();
-    this.provider = dependencies.provider ?? (config.processing ? createProvider(config.processing) : undefined);
+    this.provider = dependencies.provider;
   }
   async initialize() {
     await mkdir(this.config.importDir, { recursive: true, mode: 0o700 });
     await mkdir(this.config.exportDir, { recursive: true, mode: 0o700 });
-    return this.store instanceof AstraStore ? this.store.initialize() : { storage: 'memory', warning: 'Demonstration records are lost when the process exits' };
+    return this.local ? this.local.initialize() : this.store instanceof AstraStore || this.store instanceof LocalStore ? this.store.initialize() : { storage: 'memory', warning: 'Demonstration records are lost when the process exits' };
   }
   async diagnose() {
-    const storage = this.store instanceof AstraStore ? await this.store.diagnose() : { storage: 'memory', persistent: false };
-    return { storage, processing: this.config.processing ? { provider: this.config.processing.provider, model: this.config.processing.model, pricingDate: this.config.processing.pricing.version } : 'not configured; text extraction remains available', version: '0.1.0', libraryDir: this.config.libraryDir };
+    const storage = this.local ? await this.local.diagnose() : this.store instanceof AstraStore || this.store instanceof LocalStore ? await this.store.diagnose() : { storage: 'memory', persistent: false };
+    let processing: Record<string, unknown> = { ready: false, message: 'Optional. Public records and embedded text remain available.' };
+    if (this.config.processing || this.config.processingError) {
+      try {
+        if (this.config.processingError) throw new PKError('PROVIDER_CONFIG', this.config.processingError);
+        const configured = this.config.processing!;
+        // Validate settings without prompting the OS vault or keeping a placeholder provider.
+        createProvider({ ...configured, apiKey: configured.apiKey || 'settings-validation-only' });
+        processing = { ready: !this.config.resolveProcessingKey, configured: true, provider: configured.provider, model: configured.model, pricingDate: configured.pricing.version, maximumRequestUsd: (configured.maxInputTokens * configured.pricing.inputPerMillion + configured.maxOutputTokens * configured.pricing.outputPerMillion) / 1e6, ...(this.config.resolveProcessingKey ? { message: 'Credentials are unlocked only when a scanned page needs interpretation.' } : {}) };
+      }
+      catch (error) { processing = { ready: false, message: error instanceof PKError ? error.message : 'Check processing settings in setup. Text research remains available.' }; }
+    }
+    return { storage, processing, version: '0.1.0', libraryDir: this.config.libraryDir };
+  }
+  close(): void { this.local?.close(); if (this.store instanceof LocalStore) this.store.close(); }
+  private async astraDestination() {
+    if (this.astra) return this.astra;
+    const credentials = this.config.resolveAstra ? await this.config.resolveAstra() : { endpoint: this.config.endpoint, token: this.config.token, keyspace: this.config.keyspace };
+    if (!credentials.endpoint || !credentials.token) throw new PKError('CONFIG', 'Connect Astra through setup before opening or transferring an Astra case. Local cases remain available.');
+    this.astra = { store: new AstraStore(credentials.endpoint, credentials.token, credentials.keyspace), destinationId: sha(JSON.stringify([credentials.endpoint, credentials.keyspace])) };
+    return this.astra;
+  }
+  async transferProject(projectId: string, input: { targetProjectId: string; operationId: string; expectedRevision: number; reviewer: string; approvalText: string; dispatchersStopped?: true }) {
+    if (!this.local) throw new PKError('INVALID_INPUT', 'Case transfer starts from local storage. Choose local mode in setup to access the original case.');
+    requireText(input.reviewer, 'Reviewer', 500); requireText(input.approvalText, 'Explicit transfer approval');
+    if (await this.local.get(input.targetProjectId, input.targetProjectId)) throw new PKError('TRANSFER_CONFLICT', 'The destination identifier already belongs to a local case. Choose a fresh destination.');
+    const destination = await this.astraDestination();
+    await destination.store.diagnose();
+    const prior = await this.local.getTransfer(projectId);
+    if (prior?.status !== 'complete') {
+      const project = await this.local.get(projectId, projectId);
+      if (!project || project.revision !== input.expectedRevision) throw new PKError('CONCURRENT_UPDATE', 'The case changed. Review its current state before transferring it.');
+      if (!prior) await this.research.addLog(projectId, { type: 'transfer_approval', message: 'Researcher approved moving this case to Astra. Original documents remain local.', reviewer: input.reviewer, approvalText: input.approvalText, reviewedRevision: input.expectedRevision, operationId: input.operationId });
+    }
+    const result = await transferLocalProject(this.local, this.blobs, destination.store, this.blobs, { projectId, targetProjectId: input.targetProjectId, operationId: input.operationId, expectedRevision: input.expectedRevision, dispatchersStopped: input.dispatchersStopped, destinationId: destination.destinationId });
+    return { ...result, summary: 'Case transferred and verified. Open the Astra case from your saved case list. Original documents remain in your local library. The original local case is retained read-only.' };
+  }
+  async recoverTransfer(projectId: string, operationId: string, action: 'retry' | 'cancel', previousProcessStopped: true) {
+    if (!this.local) throw new PKError('INVALID_INPUT', 'Transfer recovery requires the local source library.');
+    return action === 'retry' ? this.local.recoverTransfer(projectId, operationId, previousProcessStopped) : this.local.cancelTransfer(projectId, operationId, previousProcessStopped);
+  }
+  async transferStatus(projectId: string) {
+    if (!this.local) throw new PKError('INVALID_INPUT', 'Transfer status is recorded in the local source library.');
+    const status = await this.local.getTransfer(projectId);
+    return { transfer: status ?? null, summary: status ? `Case transfer: ${status.status}${status.finalizing ? ', verifying an uncertain completion' : ''}. ${status.status === 'complete' ? 'Use the Astra destination from the saved case list.' : 'The original is retained. Stop any previous transfer process before recovering its lock, then retry the same saved operation and destination.'}` : 'No transfer has been started for this local case.' };
+  }
+  private async requireProvider() {
+    if (this.provider) return this.provider;
+    if (this.config.processingError) throw new PKError('PROVIDER_CONFIG', this.config.processingError);
+    if (!this.config.processing) throw new PKError('PROVIDER_REQUIRED', 'Configure scan interpretation through setup when you need it. Public records and text documents remain available.');
+    try {
+      if (this.config.resolveProcessingKey) {
+        const apiKey = await this.config.resolveProcessingKey();
+        if (!apiKey) throw new PKError('PROVIDER_CONFIG', 'Scan credentials are unavailable. Unlock the credential store or run setup again.');
+        this.config.processing = { ...this.config.processing, apiKey };
+      }
+      this.provider = createProvider(this.config.processing); return this.provider;
+    }
+    catch (error) { throw new PKError('PROVIDER_CONFIG', error instanceof PKError ? error.message : 'Processing settings need attention. Run setup again.'); }
   }
   private async requireSource(projectId: string, sourceId: string): Promise<PKRecord> {
     await this.research.getProjectContext(projectId);
@@ -154,7 +217,7 @@ export class Application {
       if (missing.some(op=>!op.context && op.status!=='settled')) throw new PKError('BILLING_UNCERTAIN','An unresolved reservation has no processing checkpoint. Verify provider billing before further model processing.');
       if (missing.some(op=>op.context?.sourceId===sourceId && op.context.page===page && op.context.model===model)) throw new PKError('PROCESSING_PENDING','This page reserved processing but its checkpoint is missing. Reconcile billing and explicitly authorize page_retry.');
     }
-    if (!embedded.trim() && !this.provider) throw new PKError('PROVIDER_REQUIRED', 'Configure a processing provider to interpret this scanned page or image');
+    if (!embedded.trim()) await this.requireProvider();
     await this.research.consumeRun(projectId, runId, { pages: 1 });
     let rendered: Awaited<ReturnType<DocumentProcessor['renderPage']>> | undefined;
     let derivedBlob: BlobRef | undefined;
@@ -250,9 +313,12 @@ export class Application {
     const body = format === 'backup' ? JSON.stringify(await this.backup(projectId),null,2) : format === 'json' ? JSON.stringify(dossier!.json,null,2) : dossier![format];
     await mkdir(this.config.exportDir, { recursive: true, mode: 0o700 });
     const root = await realpath(this.config.exportDir);
-    const path = join(root, `${format}-${randomUUID()}.${format === 'markdown' ? 'md' : format === 'html' ? 'html' : 'json'}`);
+    const { project } = await this.research.getProjectContext(projectId);
+    const label = String(project.data.address ?? 'property-history').normalize('NFKD').replace(/[^a-zA-Z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 70) || 'property-history';
+    const filename = `${label}-${format}-${randomUUID().slice(0, 8)}.${format === 'markdown' ? 'md' : format === 'html' ? 'html' : 'json'}`;
+    const path = join(root, filename);
     const handle = await open(path, constants.O_WRONLY | constants.O_CREAT | constants.O_EXCL | constants.O_NOFOLLOW, 0o600);
     try { await handle.writeFile(body); } finally { await handle.close(); }
-    return { path, format, bytes: Buffer.byteLength(body) };
+    return { path, filename, format, bytes: Buffer.byteLength(body), openingInstructions: format === 'backup' ? 'Keep this portable backup with your originals. Restore it through Plot & Kin into a fresh case.' : 'Open this file from the export folder in Finder or File Explorer. If your client cannot open local files, ask for the dossier directly in chat.' };
   }
 }
