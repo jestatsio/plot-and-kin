@@ -8,7 +8,8 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { createInterface } from 'node:readline';
 
-test('Windows launcher preserves a duplex Unicode stream and exits on EOF', { skip: process.platform !== 'win32', timeout: 60_000 }, async t => {
+for (const withoutConsole of [false, true]) {
+test(`Windows launcher preserves duplex Unicode and EOF (detached console: ${withoutConsole})`, { skip: process.platform !== 'win32', timeout: 60_000 }, async t => {
   const work = await mkdtemp(join(tmpdir(), 'pk-win-launcher-é space-'));
   const systemRoot = Object.entries(process.env).find(([key]) => /^SystemRoot$/i.test(key))[1];
   const powershell = join(systemRoot, 'System32/WindowsPowerShell/v1.0/powershell.exe');
@@ -53,8 +54,12 @@ process.stdin.on('end', () => process.stderr.write('fixture EOF\\n'));
     await mkdir(join(work, 'scripts'));
     const launcher = join(work, 'scripts/launch.ps1');
     await writeFile(launcher, source.replaceAll('__PK_SHA256__', hash).replaceAll('__PK_PLATFORM__', 'win32-x64'));
-    child = spawn(powershell, ['-NoProfile', '-NonInteractive', '-ExecutionPolicy', 'Bypass', '-File', launcher, 'serve'], {
-      cwd: work, env: { ...env, PATH: '', PK_LAUNCHER_TRACE: '1' }, windowsHide: true, stdio: ['pipe', 'pipe', 'pipe'],
+    // Codex uses CREATE_NO_WINDOW. Detach only this test's PowerShell process
+    // to exercise the same absence of a console while preserving pipe handles.
+    const detach = '$ErrorActionPreference = "Stop"; Add-Type -MemberDefinition \'[System.Runtime.InteropServices.DllImport("kernel32.dll")] public static extern bool FreeConsole();\' -Name ConsoleSession -Namespace PlotKinTest; if (-not [PlotKinTest.ConsoleSession]::FreeConsole()) { throw "Unable to detach the fixture console" }; & $env:PK_TEST_LAUNCHER serve; exit $LASTEXITCODE';
+    const entry = withoutConsole ? ['-Command', detach] : ['-File', launcher, 'serve'];
+    child = spawn(powershell, ['-NoProfile', '-NonInteractive', '-ExecutionPolicy', 'Bypass', ...entry], {
+      cwd: work, env: { ...env, PATH: '', PK_LAUNCHER_TRACE: '1', PK_TEST_LAUNCHER: launcher }, windowsHide: true, stdio: ['pipe', 'pipe', 'pipe'],
     });
     child.stderr.on('data', bytes => { stderr = (stderr + bytes.toString('utf8')).slice(-16_384); });
     closed = new Promise(resolve => child.once('close', (code, signal) => { didClose = true; resolve({ code, signal }); }));
@@ -91,3 +96,4 @@ process.stdin.on('end', () => process.stderr.write('fixture EOF\\n'));
     }
   }
 });
+}

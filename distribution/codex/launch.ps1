@@ -2,11 +2,9 @@ param([Parameter(ValueFromRemainingArguments = $true)][string[]]$ServerArguments
 # All runtime bytes are bundled. Extraction never contacts a server.
 $ErrorActionPreference = 'Stop'
 # A Windows PowerShell process launched from PowerShell 7 must load its own
-# built-in modules. Native MCP output must stay UTF-8, including on PS 5.1.
+# built-in modules. The raw stream bridge below preserves UTF-8 bytes without
+# setting console code pages, which fails when the client creates no console.
 $env:PSModulePath = [IO.Path]::Combine([Environment]::GetFolderPath('System'), 'WindowsPowerShell\v1.0\Modules')
-[Console]::InputEncoding = New-Object Text.UTF8Encoding($false)
-[Console]::OutputEncoding = New-Object Text.UTF8Encoding($false)
-$OutputEncoding = [Console]::OutputEncoding
 $pkExpected = '__PK_SHA256__'
 $pkRoot = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot '..'))
 $pkPayload = Join-Path $pkRoot 'runtime.zip'

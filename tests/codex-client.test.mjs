@@ -108,7 +108,7 @@ test('real Codex installs both catalog formats and discovers usable tools and sk
       const env = Object.fromEntries(Object.entries(process.env).filter(([key]) => /^(SystemRoot|WINDIR|TEMP|TMP|TMPDIR)$/i.test(key)));
       const windowsRoot = Object.entries(env).find(([key]) => /^SystemRoot$/i.test(key))?.[1];
       // These overrides apply only to test child processes, never the operator's profile.
-      Object.assign(env, { CODEX_HOME: profile, HOME: home, USERPROFILE: home, PK_LIBRARY_DIR: library, PK_SETTINGS_DIR: join(library, 'settings'), PATH: process.platform === 'win32' ? join(windowsRoot, 'System32', 'WindowsPowerShell', 'v1.0') : '/usr/bin:/bin' });
+      Object.assign(env, { CODEX_HOME: profile, HOME: home, USERPROFILE: home, PK_LIBRARY_DIR: library, PK_SETTINGS_DIR: join(library, 'settings'), RUST_LOG: 'codex_rmcp_client=debug,codex_core::mcp_connection_manager=debug', PATH: process.platform === 'win32' ? join(windowsRoot, 'System32', 'WindowsPowerShell', 'v1.0') : '/usr/bin:/bin' });
       const run = args => execFileSync(process.execPath, [cli, ...args], { env, cwd: work, encoding: 'utf8', timeout: 90_000 });
       run(['plugin', 'marketplace', 'add', source]);
       const installed = JSON.parse(run(['plugin', 'add', `${name}@plot-and-kin`, '--json']));
