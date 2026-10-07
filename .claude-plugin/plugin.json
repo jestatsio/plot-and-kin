@@ -1,0 +1,17 @@
+{
+  "name": "plot-and-kin",
+  "version": "0.1.0",
+  "description": "Research property history with archival evidence, reviewable findings, and saved local dossiers.",
+  "author": {
+    "name": "JEStats",
+    "url": "https://jestats.io"
+  },
+  "homepage": "https://jestatsio.github.io/plot-and-kin/",
+  "repository": "https://github.com/jestatsio/plot-and-kin",
+  "license": "Apache-2.0",
+  "keywords": [
+    "property-history",
+    "research",
+    "archives"
+  ]
+}

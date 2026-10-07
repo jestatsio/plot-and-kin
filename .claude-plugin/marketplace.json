@@ -1,0 +1,15 @@
+{
+  "name": "plot-and-kin",
+  "owner": {
+    "name": "JEStats"
+  },
+  "description": "Evidence-backed property history research for Claude Code.",
+  "plugins": [
+    {
+      "name": "plot-and-kin",
+      "source": "./",
+      "version": "0.1.0",
+      "description": "Evidence-backed property history research."
+    }
+  ]
+}

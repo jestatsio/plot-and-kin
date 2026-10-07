@@ -1,0 +1,12 @@
+{
+  "mcpServers": {
+    "plot-and-kin": {
+      "command": "node",
+      "args": [
+        "--disable-warning=ExperimentalWarning",
+        "${CLAUDE_PLUGIN_ROOT}/dist/cli.js",
+        "serve"
+      ]
+    }
+  }
+}
