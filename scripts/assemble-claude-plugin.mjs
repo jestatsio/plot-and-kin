@@ -21,11 +21,12 @@ export async function assembleClaudePlugin({ output, assets }) {
   for (const entry of ['dist', 'src', 'skills', 'LICENSE']) await cp(join(root, entry), join(output, entry), { recursive: true });
   await cp(join(root, 'distribution/claude-code/README.md'), join(output, 'README.md'));
   await mkdir(join(output, '.claude-plugin'));
+  await cp(join(root, 'extension/icon.png'), join(output, '.claude-plugin/icon.png'));
   const json = (path, value) => writeFile(join(output, path), JSON.stringify(value, null, 2) + '\n');
   await json('package.json', pkg);
   await json('package-lock.json', lock);
   await json('.claude-plugin/plugin.json', {
-    name: pkg.name, version: pkg.version, description: 'Research property history with archival evidence, reviewable findings, and saved local dossiers.',
+    name: pkg.name, displayName: 'Plot & Kin', icon: './.claude-plugin/icon.png', version: pkg.version, description: 'Research property history with archival evidence, reviewable findings, and saved local dossiers.',
     author: { name: 'JEStats', url: 'https://jestats.io' },
     homepage: 'https://jestatsio.github.io/plot-and-kin/',
     repository: 'https://github.com/jestatsio/plot-and-kin', license: pkg.license,
