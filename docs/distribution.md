@@ -1,12 +1,18 @@
 # Installable packages and marketplace publication
 
-**Last updated: October 1, 2026**
+**Last updated: October 7, 2026**
 
-Plot & Kin packages its own Node runtime and native PDF/image dependencies. The default local workflow starts without a terminal, database account, or model API key after a client package is installed. Optional Astra and scan-processing setup still use the guided terminal workflow.
+The native Codex and Claude Desktop packages include their own Node runtime and native PDF/image dependencies. The Claude Code plugin uses the installed Node runtime and locked npm dependencies. After a native Codex or Claude Desktop package is installed, its default local workflow starts without a terminal, database account, or model API key. Optional Astra and scan-processing setup still use the guided terminal workflow.
 
-**Release status:** native preview packages have passed automated checks on Apple Silicon Mac, Intel Mac, and Windows x64. Download them from a successful build below. Public release downloads and the Git marketplace catalog are not published yet. The Apple Silicon Claude Desktop walkthrough verified installation, a fictional sample, citation reading, and dossier export. The full desktop journeys remain on the [client acceptance checklist](client-acceptance.md).
+**Release status:** [v0.1.0](https://github.com/jestatsio/plot-and-kin/releases/tag/v0.1.0), the Codex `plugins` branch, and the Claude Code `claude-plugins` branch are published. Native package checks pass on Apple Silicon Mac, Intel Mac, and Windows x64. Official directory review and publication remain separate gates. The Apple Silicon Claude Desktop walkthrough verified installation, a fictional sample, citation reading, and dossier export. The full desktop journeys remain on the [client acceptance checklist](client-acceptance.md).
 
 [Getting started](getting-started.md) · [Privacy and data handling](privacy.md) · [Source coverage](source-coverage.md)
+
+## Release downloads
+
+Download [Plot & Kin v0.1.0](https://github.com/jestatsio/plot-and-kin/releases/tag/v0.1.0). Use your platform's `.mcpb` for Claude Desktop, `-codex.zip` for Codex, or native `.tar.gz`/`.zip` for guided setup. The universal `plot-and-kin-0.1.0-claude-code.zip` requires Node.js 22.19+, npm, and Claude Code 2.1.291+. Check downloads against `SHA256SUMS.txt`.
+
+Git catalogs provide direct installation for [Codex](#codex-git-marketplace) and [Claude Code](#claude-code). These are JEStats catalogs. Public directory approval is a separate step.
 
 ## Preview builds available now
 
@@ -31,15 +37,31 @@ These are preview builds. A successful automated run is separate from completing
 | Client / path | File for your platform | First step |
 | --- | --- | --- |
 | Claude Desktop | `plot-and-kin-VERSION-PLATFORM.mcpb` | Settings → Extensions → Advanced settings → Install extension |
-| Codex, Git marketplace, after publication | The `plugins` branch of `jestatsio/plot-and-kin` | Add the marketplace source, then install the entry for your computer |
+| Codex, Git marketplace | The `plugins` branch of `jestatsio/plot-and-kin` | Add the marketplace source, then install the entry for your computer |
+| Claude Code | The `claude-plugins` branch or universal `-claude-code.zip` | Add the Git marketplace and install Plot & Kin. Requires Node.js and npm |
 | Codex, offline marketplace | `plot-and-kin-VERSION-PLATFORM-codex.zip` | Extract, add its folder as a local marketplace source, then install Plot & Kin |
-| Both clients, guided setup | Native `.tar.gz` or `.zip` | Extract the preview and run its bundled setup, or use the [one-command installer after release publication](getting-started.md#after-a-packaged-release-is-published) |
+| Codex and Claude Desktop, guided setup | Native `.tar.gz` or `.zip` | Extract the preview and run its bundled setup, or use the [one-command installer after release publication](getting-started.md#after-a-packaged-release-is-published) |
 
-Platforms are `darwin-arm64` for Apple Silicon, `darwin-x64` for Intel Mac, and `win32-x64` for Windows x64. Windows ARM64 is not a validated target. Select the matching architecture. Packages are deliberately larger because they include their runtime.
+Platforms are `darwin-arm64` for Apple Silicon, `darwin-x64` for Intel Mac, and `win32-x64` for Windows x64. Windows ARM64 is not a validated target. Select the matching architecture. Native packages are deliberately larger because they include their runtime.
+
+## Claude Code
+
+Requires Node.js 22.19+, npm, and Claude Code 2.1.291+. Install the Git plugin with:
+
+```sh
+claude plugin marketplace add https://github.com/jestatsio/plot-and-kin.git#claude-plugins
+claude plugin install plot-and-kin@plot-and-kin
+```
+
+Claude Code copies the plugin into its cache and installs the exact production dependencies from its npm lockfile with lifecycle scripts disabled. Restart and ask **“Help me get started with Plot & Kin.”** The server and research skill use the same persistent local library as the native packages.
+
+For a local ZIP, extract `plot-and-kin-0.1.0-claude-code.zip`, run `npm ci --ignore-scripts --omit=dev` in the extracted directory, then load it with `claude --plugin-dir /absolute/path/to/plugin`. Local-directory loading does not install dependencies automatically.
+
+This plugin is distributed through the JEStats Git catalog. Anthropic directory review and publication are separate. See the [plugin README](https://github.com/jestatsio/plot-and-kin/blob/claude-plugins/README.md) for data handling, optional setup, and updates.
 
 ## Claude Desktop
 
-Get the matching `.mcpb` from a [preview build](#preview-builds-available-now), or from the [Releases page](https://github.com/jestatsio/plot-and-kin/releases) once a release is published. Select it using **Settings → Extensions → Advanced settings → Install extension**. Review the package identity and permissions, then install. No required configuration fields appear for the default local workflow.
+Get the matching `.mcpb` from the [release downloads](#release-downloads). Select it using **Settings → Extensions → Advanced settings → Install extension**. Review the package identity and permissions, then install. No required configuration fields appear for the default local workflow.
 
 Start a new Claude conversation and ask **“Help me get started with Plot & Kin.”** Choose an address or a visibly fictional sample. Research is saved under your home directory's `.plot-and-kin` folder, or your previously configured library.
 
@@ -47,7 +69,7 @@ Directly distributed extensions are updated by installing the newer `.mcpb`. The
 
 ## Codex Git marketplace
 
-**Use this path only after the `plugins` catalog branch has been published.** Add the repository's dedicated catalog branch as a marketplace source in a supporting Codex client. The Codex CLI equivalent is:
+Add the repository's dedicated catalog branch as a marketplace source in a supporting Codex client. The Codex CLI equivalent is:
 
 ```sh
 codex plugin marketplace add jestatsio/plot-and-kin@plugins
@@ -67,7 +89,7 @@ Every platform package is checksum-verified when the catalog is built. Refresh t
 
 ## Codex offline marketplace
 
-Get the matching `-codex.zip` from a [preview build](#preview-builds-available-now), then extract the entire package to a permanent folder. Keep its hidden `.agents` folder with its `plugins` folder. Add that root folder as a local marketplace source in a supporting client. The Codex CLI equivalent is:
+Get the matching `-codex.zip` from the [release downloads](#release-downloads), then extract the entire package to a permanent folder. Keep its hidden `.agents` folder with its `plugins` folder. Add that root folder as a local marketplace source in a supporting client. The Codex CLI equivalent is:
 
 ```sh
 codex plugin marketplace add "/absolute/path/to/plot-and-kin-codex"
@@ -130,6 +152,7 @@ Make a portable case backup before an upgrade. Removing a plugin does not remove
 
 Direct distribution and public directory approval are separate milestones:
 
+- **Claude Code:** submit the `claude-plugins` branch through [Anthropic's developer portal](https://claude.ai/directory/manage). The plugin contains readable server code and a production lockfile. A passed validation or submitted review is not a live listing.
 - **Claude Desktop:** submit the validated `.mcpb` through the desktop-extension submission form linked in [Claude's local MCP documentation](https://support.claude.com/en/articles/10949351-getting-started-with-local-mcp-servers-on-claude-desktop). The general remote-connector submission route is different.
 - **OpenAI:** custom marketplaces support local execution. The documented public MCP submission route expects a public HTTPS server. Contact OpenAI about local-MCP eligibility before promising an official listing. See [submission guidance](https://developers.openai.com/plugins/guides/submit-claude-plugin).
 

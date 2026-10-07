@@ -14,7 +14,7 @@ By default, cases, passages, findings, review decisions, research logs, and proc
 - **Public records and supplied URLs:** Searching DC sources sends the search terms or requested map extent to the relevant public service. Fetching a public document URL contacts that site's operator. Those services receive ordinary connection information such as your IP address.
 - **Optional Astra:** If you configure Astra, structured research for explicitly transferred cases or your selected Astra default is stored in your database. Original document bytes remain local. Astra is not a backup of the local library.
 - **Optional document processing:** If you configure OpenAI or Anthropic, requested processing sends the relevant page, image, and processing instructions to your chosen provider. Its terms and data policies apply. There is no automatic provider switch.
-- **Installation and updates:** Downloading packages contacts GitHub and its delivery services. Marketplace hosts may check for updates under their own settings. The installed server does not send research to the package download host.
+- **Installation and updates:** Downloading packages contacts GitHub and its delivery services. Claude Code also downloads the exact dependencies in the plugin's npm lockfile from npm and its delivery services. Marketplace hosts may check for updates under their own settings. The installed server does not send research to the package download host.
 
 No database or model API credentials are needed for the default local, public-record, and text-document workflow. Optional credentials entered through guided setup are protected by macOS Keychain or Windows DPAPI. They are not included in research exports or client registration files.
 

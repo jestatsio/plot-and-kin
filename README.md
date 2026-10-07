@@ -9,7 +9,7 @@
 </p>
 
 <p align="center">
-  <a href="docs/distribution.md#preview-builds-available-now"><strong>Install the preview</strong></a> ·
+  <a href="docs/distribution.md#release-downloads"><strong>Install Plot & Kin</strong></a> ·
   <a href="https://jestatsio.github.io/plot-and-kin/">Explore the docs</a> ·
   <a href="docs/source-coverage.md">Source coverage</a> ·
   <a href="docs/validation.md">Validation</a>
@@ -19,21 +19,22 @@
 
 **Turn a property-history question into a dossier you can stand behind.** Plot & Kin helps professional researchers gather sources, trace people and places, compare conflicting accounts, and carry every conclusion back to its evidence.
 
-Work in **Codex or Claude Desktop**. Plot & Kin runs on your computer and saves the research between conversations. Start with local storage, add your own Astra database when you need it, and keep original documents in your local library. Open source under Apache-2.0.
+Work in **Codex, Claude Code, or Claude Desktop**. Plot & Kin runs on your computer and saves the research between conversations. Start with local storage, add your own Astra database when you need it, and keep original documents in your local library. Open source under Apache-2.0.
 
 ## Choose your client. Start your first case.
 
-**No separate Node.js installation, Astra account, or model API key is needed for public records and text documents.** Native packages include the runtime and document tools. Your client's account and charges are separate.
+**Native Codex and Claude Desktop packages need no separate Node.js installation, Astra account, or model API key for public records and text documents.** They include the runtime and document tools. Claude Code requires Node.js and npm. Your client's account and charges are separate.
 
 | How you work | Install path | What you do |
 | --- | --- | --- |
 | **Claude Desktop** | [Desktop extension](docs/distribution.md#claude-desktop) · `.mcpb` | Download your platform's package, then select it in **Settings → Extensions → Advanced settings → Install extension** |
+| **Claude Code** | [Git plugin](docs/distribution.md#claude-code) | Add the `claude-plugins` branch and install Plot & Kin. Requires Node.js 22.19+, npm, and Claude Code 2.1.291+ |
 | **Codex** | [Local marketplace](docs/distribution.md#codex-offline-marketplace) · `-codex.zip` | Extract the package, add its folder as a marketplace source, then install **Plot & Kin** |
-| **Either or both clients** | [Guided setup](docs/distribution.md#guided-setup-from-a-preview) | Choose your client and **Save on this computer**. The one-command release installer is prepared for publication |
+| **Codex and Claude Desktop** | [Guided setup](docs/distribution.md#guided-setup-from-a-preview) | Choose your client and **Save on this computer**. The release installer downloads and verifies the runtime before setup |
 
-**[Get a native preview build →](docs/distribution.md#preview-builds-available-now)** Choose **Apple Silicon Mac** (`darwin-arm64`), **Intel Mac** (`darwin-x64`), or **Windows x64** (`win32-x64`). Preview downloads are GitHub Actions artifacts and require a signed-in GitHub account.
+**[Download v0.1.0 →](docs/distribution.md#release-downloads)** Choose **Apple Silicon Mac** (`darwin-arm64`), **Intel Mac** (`darwin-x64`), or **Windows x64** (`win32-x64`). Public GitHub release downloads include packages and SHA-256 checksums.
 
-> **Preview status · October 1, 2026:** native packages have passed automated checks on all three platforms. Public release downloads and the [Codex Git marketplace catalog](docs/distribution.md#codex-git-marketplace) are not published yet. Use the preview guide above or the [developer checkout](#build-from-source). Official directory listings are a separate milestone.
+> **Release status · October 7, 2026:** v0.1.0 and the Codex and Claude Code Git catalogs are published. Native package checks pass on all three platforms. Official directory review and publication remain separate gates. Plot & Kin remains a researcher-facing prototype.
 
 Once installed, open a new chat:
 

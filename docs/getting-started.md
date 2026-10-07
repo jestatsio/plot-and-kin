@@ -1,25 +1,29 @@
 # Getting started
 
-**Last updated: October 1, 2026**
+**Last updated: October 7, 2026**
 
-Start with an address and a question. Plot & Kin saves cases on your computer by default, so public building records, text documents, evidence review, and dossiers need no Astra account or separate model API key. Codex or Claude Desktop supplies the research conversation. The client's own account and charges are separate.
+Start with an address and a question. Plot & Kin saves cases on your computer by default, so public building records, text documents, evidence review, and dossiers need no Astra account or separate model API key. Codex, Claude Code, or Claude Desktop supplies the research conversation. The client's own account and charges are separate.
 
 [Project overview](../README.md) · [Documentation site](https://jestatsio.github.io/plot-and-kin/) · [Evidence and data](evidence-and-data.md) · [Privacy](privacy.md) · [Validation](validation.md)
 
 ## Install and connect
 
-**Release status:** native preview builds are available for macOS and Windows. Public release downloads and the Git marketplace catalog are not published yet. Automated package checks pass on all three supported platforms, and the Apple Silicon Claude Desktop walkthrough covers installation through a sample dossier export. See [client acceptance](client-acceptance.md) for remaining desktop checks.
+**Release status:** [v0.1.0](https://github.com/jestatsio/plot-and-kin/releases/tag/v0.1.0) and the Codex and Claude Code Git catalogs are published. Official directory approval remains separate. Automated package checks pass on all three supported platforms, and the Apple Silicon Claude Desktop walkthrough covers installation through a sample dossier export. See [client acceptance](client-acceptance.md) for remaining desktop checks.
 
 ### Client packages: runtime included
 
-Follow the [preview download guide](distribution.md#preview-builds-available-now) to choose a package for **Mac Apple Silicon**, **Mac Intel**, or **Windows x64**:
+Follow the [release download guide](distribution.md#release-downloads) to choose a package for **Mac Apple Silicon**, **Mac Intel**, or **Windows x64**:
 
 - **Claude Desktop:** download the matching `.mcpb`, then use **Settings → Extensions → Advanced settings → Install extension**.
-- **Codex:** extract the matching `-codex.zip`, add its folder as a local marketplace source, then install Plot & Kin. The Git marketplace route will be available after catalog publication.
+- **Codex:** extract the matching `-codex.zip`, add its folder as a local marketplace source, then install Plot & Kin. You can also use the published Git marketplace.
 
 Both packages include their runtime and start with persistent local storage. No Node.js installation, database account, model API key, or guided setup is needed for your first local case. Codex local-source registration may require its CLI depending on the client version. Start a new chat and ask **“Help me get started with Plot & Kin.”** Your client's account and public-source network access are still required.
 
-Use [client packages and marketplace installation](distribution.md) for exact files and commands. The preview also includes a [bundled guided setup](distribution.md#guided-setup-from-a-preview) for either or both clients. A custom marketplace is separate from an approved public-directory listing. If you already connected this client through guided setup, follow the migration steps there to avoid duplicate tools.
+Use [client packages and marketplace installation](distribution.md) for exact files and commands. The release also includes a [bundled guided setup](distribution.md#guided-setup-from-a-preview) for either or both clients. A custom marketplace is separate from an approved public-directory listing. If you already connected this client through guided setup, follow the migration steps there to avoid duplicate tools.
+
+### Claude Code
+
+Install the [Claude Code Git plugin](distribution.md#claude-code). It requires Node.js 22.19+, npm, and Claude Code 2.1.291+. The native Codex and Claude Desktop packages above include their runtime.
 
 ### Available now: developer checkout
 
@@ -41,7 +45,7 @@ Keep the checkout and Node executable in place while using this developer instal
 
 ### After a packaged release is published
 
-These commands will download a versioned bundle, verify its checksum, check its bundled Node runtime and native document dependencies, then launch guided setup. The packaged path requires no separate Node or Git installation.
+These commands download a versioned bundle, verify its checksum, check its bundled Node runtime and native document dependencies, then launch guided setup. The packaged path requires no separate Node or Git installation.
 
 **macOS Terminal, Apple Silicon or Intel:**
 
