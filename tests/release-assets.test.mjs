@@ -11,7 +11,7 @@ test('publication refuses missing client packages, mismatched versions, and corr
   const version = '0.1.0';
   const files = releaseAssetNames(version);
   try {
-    assert.equal(files.length, 9);
+    assert.equal(files.length, 10);
     assert.throws(() => releaseAssetNames('../unsafe'));
     for (const file of files) {
       const bytes = Buffer.from(`Fixture for ${file}`);
@@ -20,6 +20,11 @@ test('publication refuses missing client packages, mismatched versions, and corr
     }
     await writeFile(join(dir, 'version.txt'), version);
     assert.deepEqual((await verifyReleaseAssets(dir, version)).files, files);
+    const codePlugin = files.find(file => file.endsWith('-claude-code.zip'));
+    const codeBytes = await readFile(join(dir, codePlugin));
+    await rm(join(dir, codePlugin));
+    await assert.rejects(verifyReleaseAssets(dir, version), /ENOENT/);
+    await writeFile(join(dir, codePlugin), codeBytes);
     const extension = files.find(file => file.endsWith('.mcpb'));
     const original = await readFile(join(dir, extension));
     await rm(join(dir, extension));
