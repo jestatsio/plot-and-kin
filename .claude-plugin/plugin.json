@@ -13,5 +13,7 @@
     "property-history",
     "research",
     "archives"
-  ]
+  ],
+  "displayName": "Plot & Kin",
+  "icon": "./.claude-plugin/icon.png"
 }
