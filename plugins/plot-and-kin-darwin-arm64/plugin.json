@@ -1,0 +1,38 @@
+{
+  "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
+  "name": "plot-and-kin-darwin-arm64",
+  "version": "0.1.0",
+  "description": "Evidence-backed property research with archival sources, reviewable claims, and portable dossiers.",
+  "author": {
+    "name": "JEStats",
+    "url": "https://jestats.io"
+  },
+  "homepage": "https://jestatsio.github.io/plot-and-kin/",
+  "repository": "https://github.com/jestatsio/plot-and-kin",
+  "license": "Apache-2.0",
+  "keywords": [
+    "property-history",
+    "research",
+    "archives"
+  ],
+  "extensions": {
+    "com.openai": {
+      "interface": {
+        "displayName": "Plot & Kin · Mac · Apple Silicon",
+        "shortDescription": "Discover the stories behind an address.",
+        "longDescription": "Research property history, preserve your evidence, and build a reviewable dossier. Mac · Apple Silicon. Local storage works immediately without an account or API key.",
+        "developerName": "JEStats",
+        "category": "Productivity",
+        "websiteURL": "https://jestatsio.github.io/plot-and-kin/",
+        "privacyPolicyURL": "https://jestatsio.github.io/plot-and-kin/privacy.html",
+        "composerIcon": "./assets/icon.png",
+        "logo": "./assets/icon.png",
+        "defaultPrompt": [
+          "Help me research the history of a property.",
+          "Show my saved research cases."
+        ],
+        "brandColor": "#173F35"
+      }
+    }
+  }
+}

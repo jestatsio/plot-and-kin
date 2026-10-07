@@ -1,0 +1,70 @@
+{
+  "name": "plot-and-kin",
+  "version": "0.1.0",
+  "description": "Evidence-backed property research for Codex and Claude Desktop",
+  "homepage": "https://jestatsio.github.io/plot-and-kin/",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/jestatsio/plot-and-kin.git"
+  },
+  "bugs": {
+    "url": "https://github.com/jestatsio/plot-and-kin/issues"
+  },
+  "type": "module",
+  "license": "Apache-2.0",
+  "engines": {
+    "node": ">=22.19.0"
+  },
+  "bin": {
+    "plot-and-kin": "dist/cli.js"
+  },
+  "files": [
+    "dist",
+    "skills",
+    ".codex-plugin",
+    ".mcp.json",
+    "mcp.json",
+    "docs",
+    "README.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "vitest run",
+    "test:coverage": "vitest run --coverage",
+    "test:cli": "node --test tests/cli.test.mjs",
+    "test:installer": "node --test tests/installer.test.mjs",
+    "test:distribution": "node --test tests/claude-extension.test.mjs tests/claude-code-package.test.mjs tests/codex-package.test.mjs tests/release-assets.test.mjs",
+    "test:codex-client": "node --test tests/codex-client.test.mjs",
+    "release:package": "node scripts/package-release.mjs",
+    "docs:example": "npm run build && node scripts/generate-docs-example.mjs",
+    "check": "npm run typecheck && npm test",
+    "start": "node dist/cli.js serve",
+    "prepack": "npm run build"
+  },
+  "overrides": {
+    "@anthropic-ai/mcpb": {
+      "tmp": "0.2.7"
+    }
+  },
+  "dependencies": {
+    "@datastax/astra-db-ts": "2.3.0",
+    "@modelcontextprotocol/sdk": "1.31.0",
+    "@napi-rs/canvas": "1.0.9",
+    "htmlparser2": "12.0.0",
+    "pdfjs-dist": "6.3.289",
+    "sharp": "0.35.5",
+    "smol-toml": "1.9.0",
+    "undici": "8.11.2",
+    "zod": "4.6.5"
+  },
+  "devDependencies": {
+    "@anthropic-ai/mcpb": "2.1.2",
+    "@openai/codex": "0.159.3",
+    "@types/node": "26.6.3",
+    "@vitest/coverage-v8": "5.0.3",
+    "typescript": "7.0.2",
+    "vitest": "5.0.3"
+  }
+}

@@ -1,0 +1,23 @@
+{
+  "name": "plot-and-kin-win32-x64",
+  "version": "0.1.0",
+  "description": "Evidence-backed property research with archival sources, reviewable claims, and portable dossiers.",
+  "skills": "./skills/",
+  "mcpServers": "./mcp.json",
+  "interface": {
+    "displayName": "Plot & Kin · Windows · x64",
+    "shortDescription": "Discover the stories behind an address.",
+    "longDescription": "Research property history, preserve your evidence, and build a reviewable dossier. Windows · x64. Local storage works immediately without an account or API key.",
+    "developerName": "JEStats",
+    "category": "Productivity",
+    "websiteURL": "https://jestatsio.github.io/plot-and-kin/",
+    "privacyPolicyURL": "https://jestatsio.github.io/plot-and-kin/privacy.html",
+    "composerIcon": "./assets/icon.png",
+    "logo": "./assets/icon.png",
+    "defaultPrompt": [
+      "Help me research the history of a property.",
+      "Show my saved research cases."
+    ],
+    "brandColor": "#173F35"
+  }
+}

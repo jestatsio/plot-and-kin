@@ -1,0 +1,14 @@
+{
+  "$schema": "https://agent-plugins.org/schemas/1.0.0/mcp.schema.json",
+  "mcpServers": {
+    "plot-and-kin": {
+      "type": "stdio",
+      "command": "./bin/node.exe",
+      "args": [
+        "--disable-warning=ExperimentalWarning",
+        "${PLUGIN_ROOT}/dist/cli.js",
+        "serve"
+      ]
+    }
+  }
+}
