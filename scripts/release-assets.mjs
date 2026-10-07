@@ -5,10 +5,10 @@ import { join } from 'node:path';
 
 export function releaseAssetNames(version) {
   if (!/^\d+\.\d+\.\d+(?:-[a-zA-Z0-9.-]+)?$/.test(version)) throw new Error('Invalid release version');
-  return ['darwin-arm64', 'darwin-x64', 'win32-x64'].flatMap(platform => {
+  return [...['darwin-arm64', 'darwin-x64', 'win32-x64'].flatMap(platform => {
     const prefix = `plot-and-kin-${version}-${platform}`;
     return [`${prefix}.${platform === 'win32-x64' ? 'zip' : 'tar.gz'}`, `${prefix}.mcpb`, `${prefix}-codex.zip`];
-  });
+  }), `plot-and-kin-${version}-claude-code.zip`];
 }
 
 export async function verifyReleaseAssets(directory, version) {

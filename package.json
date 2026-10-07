@@ -35,7 +35,7 @@
     "test:coverage": "vitest run --coverage",
     "test:cli": "node --test tests/cli.test.mjs",
     "test:installer": "node --test tests/installer.test.mjs",
-    "test:distribution": "node --test tests/claude-extension.test.mjs tests/codex-package.test.mjs tests/release-assets.test.mjs",
+    "test:distribution": "node --test tests/claude-extension.test.mjs tests/claude-code-package.test.mjs tests/codex-package.test.mjs tests/release-assets.test.mjs",
     "test:codex-client": "node --test tests/codex-client.test.mjs",
     "release:package": "node scripts/package-release.mjs",
     "docs:example": "npm run build && node scripts/generate-docs-example.mjs",
