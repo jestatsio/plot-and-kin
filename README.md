@@ -1,3 +1,5 @@
+<p align="center"><img src="extension/icon.png" alt="Plot &amp; Kin icon" width="88" height="88"></p>
+
 <p align="center">
   <img src="docs/site/assets/readme-banner.svg" alt="Plot & Kin — The history of places. The evidence behind every story." width="100%">
 </p>
