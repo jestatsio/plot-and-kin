@@ -30,7 +30,7 @@ Git catalogs provide direct installation for [Codex](#codex-git-marketplace) and
 
 Each artifact includes the platform packages, version information, and SHA-256 checksum files. GitHub requires a signed-in account to download workflow artifacts, and the downloads expire according to the repository's retention settings. If a run's artifacts have expired, choose a newer successful run. See [GitHub's artifact download guide](https://docs.github.com/en/actions/how-tos/manage-workflow-runs/download-workflow-artifacts).
 
-These are preview builds. A successful automated run is separate from completing the research journey in each desktop client. Published releases will provide stable downloads without this workflow-artifact step.
+These workflow artifacts are preview builds. A successful automated run is separate from completing the research journey in each desktop client. Use the published v0.1.0 release above for stable downloads without this workflow-artifact step.
 
 ## Choose your package
 
